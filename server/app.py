@@ -94,7 +94,7 @@ def delete():
         abort(400, description="Invalid file identifier")
 
     db = get_db()
-    if id not in db:
+    if id not in db['images']:
         abort(400, description="File identifier not found")
 
     # Remove file
@@ -102,7 +102,7 @@ def delete():
     filepath.unlink()
 
     # Remove art from database
-    db.pop(id)
+    db['images'].pop(id)
     set_db(db)
 
     return "Artwork successfully deleted"
