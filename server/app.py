@@ -22,7 +22,7 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000  # Limit uploads to 16 MB
 
 def get_db() -> dict:
     if not DB_PATH.exists():
-        DB_PATH.write_text("{\"images\":{}, \"last_id\":\"\"}")
+        DB_PATH.write_text("{\"images\":{}, \"next_id\":\"\"}")
 
     with DB_PATH.open("r") as f:
         return json.load(f)
@@ -50,13 +50,13 @@ def upload():
         abort(400, description="Image not provided")
 
     if not (title := request.args.get('title', type=str)):
-        abort(400, description="Title not specified")
+        abort(400, description="Invalid title")
 
     if not (artist := request.args.get('artist', type=str)):
-        abort(400, description="Artist not specified")
+        abort(400, description="Invalid artist")
 
     if not has_valid_extension(file.filename):
-        abort(400, description="Image file extension not supported")
+        abort(400, description="Unsupported image file extension")
 
     # Convert image to B&W
     img = Image.open(file)  # type: ignore
@@ -85,42 +85,51 @@ def upload():
     # Save image
     img.save(filepath)
 
-    return "Image successfully uploaded"
+    return "Artwork successfully uploaded"
 
 
 @app.route("/delete", methods=['DELETE'])
 def delete():
-    if not (id := request.args.get('id')):
-        abort(400, description="File identifier not specified")
+    if not (id := request.args.get('id', type=str)):
+        abort(400, description="Invalid file identifier")
 
     db = get_db()
     if id not in db:
         abort(400, description="File identifier not found")
 
-    filepath = IMAGES_DIR / db[id]['file']
-    if not filepath.exists():
-        abort(
-            400, description=f"Image with doesn't exist for file")
-
-    # Remove image file
+    # Remove file
+    filepath = IMAGES_DIR / db['images'][id]['file']
     filepath.unlink()
 
     # Remove art from database
     db.pop(id)
     set_db(db)
 
-    return "Image successfully deleted"
+    return "Artwork successfully deleted"
+
+
+@app.route("/queue", methods=['POST'])
+def queue_next_image():
+    if not (id := request.args.get('id', type=str)):
+        abort(400, "Invalid file identifier")
+
+    db = get_db()
+    if id not in db['images']:
+        abort(400, description="File identifier not found")
+
+    db['next_id'] = id
+    set_db(db)
+
+    art = db['images'][id]
+    return f"Queued art: {art['title']} by {art['artist']}"
 
 
 @app.route("/random", methods=['GET'])
 def download():
-    width = request.args.get('width', type=int)
-    height = request.args.get('height', type=int)
-
-    if width is None:
-        abort(400, "Valid width not specified")
-    elif height is None:
-        abort(400, "Valid height not specified")
+    if not (width := request.args.get('width', type=int)):
+        abort(400, "Invalid width")
+    if not (height := request.args.get('height', type=int)):
+        abort(400, "Invalid height")
 
     dimensions = (width, height)
 
@@ -130,20 +139,25 @@ def download():
     if len(ids) == 0:
         abort(500, "No artwork was found")
 
-    # Select random, different image if needed
-    selected_id = ids[0]
-    if len(ids) > 1:
-        last_id = db['last_id']
-        while selected_id == last_id:
-            selected_id = random.choice(ids)
+    # Select the saved next id as the current id
+    next_id = db['next_id']
+    current_id = next_id
 
-    # Update last seen image
-    db['last_id'] = selected_id
+    if current_id == "" or len(ids) == 1:
+        current_id = ids[0]
+        next_id = ids[0]
+    else:
+        # Queue random, different image
+        while current_id == next_id:
+            next_id = random.choice(ids)
+
+    # Update next image
+    db['next_id'] = next_id
     set_db(db)
 
     # Processes the image to the desired dimensions
-    artwork = db['images'][selected_id]
-    img = Image.open(IMAGES_DIR / artwork['file'])
+    art = db['images'][current_id]
+    img = Image.open(IMAGES_DIR / art['file'])
     img = ImageOps.contain(img, dimensions)
     img = ImageOps.pad(img, dimensions, color=0xFFFFFF)
 
