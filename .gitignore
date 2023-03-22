@@ -1,5 +1,6 @@
-# Ignore images directory
+# Ignore server data files and directories
 images/
+db.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
