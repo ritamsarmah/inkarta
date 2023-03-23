@@ -83,6 +83,7 @@ def upload():
 
     # Store info to disk
     db['images'][identifier] = {
+        'id': identifier,
         'title': title,
         'artist': artist,
         'pad': pad
