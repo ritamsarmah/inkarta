@@ -12,23 +12,22 @@ IMAGES_DIR = Path('images/')
 ALLOWED_EXTENSIONS = {'bmp', 'png', 'jpg', 'jpeg', 'tiff', 'tif'}
 DB_PATH = Path('db.json')
 
+# Flask
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = IMAGES_DIR
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1000 * 1000  # Limit uploads to 16 MB
 
+# Database
+if not DB_PATH.exists():
+    DB_PATH.write_text("{\"artworks\":{}, \"next\":\"\"}")
+
+with DB_PATH.open("r") as f:
+    db = json.load(f)
 
 ''' Database '''
 
 
-def get_db() -> dict:
-    if not DB_PATH.exists():
-        DB_PATH.write_text("{\"images\":{}, \"next\":\"\"}")
-
-    with DB_PATH.open("r") as f:
-        return json.load(f)
-
-
-def set_db(db):
+def save_db(db):
     with DB_PATH.open("w+") as f:
         json.dump(db, f)
 
@@ -41,12 +40,64 @@ def has_valid_extension(filename):
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
+def image_path(identifier):
+    return IMAGES_DIR / f"{identifier}.bmp"
+
+
 ''' Routes '''
 
 
 @app.route("/fetch", methods=['GET'])
 def fetch():
-    return get_db()
+    if not (identifier := request.args.get('id', type=str)):
+        abort(400, description="Invalid file identifier")
+
+    if identifier not in db['artworks']:
+        abort(400, description="File identifier not found")
+
+    return db['artwork']
+
+
+@app.route("/next", methods=['GET', 'PUT'])
+def next_id():
+    if request.method == 'GET':
+        identifier = db['next']
+    elif request.method == 'PUT':
+        if not (identifier := request.args.get('id', type=str)):
+            abort(400, "Invalid file identifier")
+
+        if identifier not in db['artworks']:
+            abort(400, description="File identifier not found")
+
+        db['next'] = identifier
+        save_db(db)
+    else:
+        abort(405)
+
+    return identifier
+
+
+@app.route("/delete", methods=['DELETE'])
+def delete():
+    if not (identifier := request.args.get('id', type=str)):
+        abort(400, description="Invalid file identifier")
+
+    if identifier not in db['artworks']:
+        abort(400, description="File identifier not found")
+
+    # Remove file
+    image_path(identifier).unlink()
+
+    # Remove art from database
+    db['artworks'].pop(identifier)
+
+    # Reset next if it was the deleted artwork
+    if db['next'] == identifier:
+        db['next'] = ""
+
+    save_db(db)
+
+    return "Success", 200
 
 
 @app.route("/upload", methods=['POST'])
@@ -64,6 +115,7 @@ def upload():
 
     artist = request.args.get('artist', default="none", type=str)
     pad = request.args.get('pad', default=True, type=bool)
+    force = request.args.get('force', default=False, type=bool)
 
     # Convert image to B&W
     img = Image.open(file)  # type: ignore
@@ -72,113 +124,65 @@ def upload():
     # Create unique identifier by hashing title and artist
     identifier = md5(f"{title}{artist}".encode()) \
         .hexdigest()[:16]
-    filename = f"{identifier}.bmp"
-    filepath = IMAGES_DIR / filename
 
     # Check that artwork doesn't already exist
-    db = get_db()
-    if identifier in db['images']:
+    if not force and identifier in db['artworks']:
         abort(
             400, description=f"Cancelled upload of duplicate artwork: {title} by {artist}")
 
     # Store info to disk
-    db['images'][identifier] = {
+    db['artworks'][identifier] = {
         'id': identifier,
         'title': title,
         'artist': artist,
         'pad': pad
     }
-    set_db(db)
+    save_db(db)
 
     # Save image
-    img.save(filepath)
+    img.save(image_path(identifier))
 
     return "Success", 200
 
 
-@app.route("/delete", methods=['DELETE'])
-def delete():
-    if not (identifier := request.args.get('id', type=str)):
-        abort(400, description="Invalid file identifier")
-
-    db = get_db()
-    if identifier not in db['images']:
-        abort(400, description="File identifier not found")
-
-    # Remove file
-    filepath = IMAGES_DIR / f"{identifier}.bmp"
-    filepath.unlink()
-
-    # Remove art from database
-    db['images'].pop(identifier)
-
-    # Reset next if it was the deleted artwork
-    if db['next'] == identifier:
-        db['next'] = ""
-
-    set_db(db)
-
-    return "Success", 200
-
-
-@app.route("/next", methods=['GET', 'PUT'])
-def next_id():
-    db = get_db()
-
-    if request.method == 'GET':
-        identifier = db['next']
-    elif request.method == 'PUT':
-        if not (identifier := request.args.get('id', type=str)):
-            abort(400, "Invalid file identifier")
-
-        if identifier not in db['images']:
-            abort(400, description="File identifier not found")
-
-        db['next'] = identifier
-        set_db(db)
-    else:
-        abort(405)
-
-    return identifier
-
-
-@app.route("/random", methods=['GET'])
+@app.route("/image", methods=['GET'])
 def download():
-    if not (width := request.args.get('w', type=int)):
-        abort(400, "Invalid width")
-    if not (height := request.args.get('h', type=int)):
-        abort(400, "Invalid height")
+    identifier = request.args.get('id', type=str)
+    width = request.args.get('w', type=int)
+    height = request.args.get('h', type=int)
 
-    # Retrieve artwork ids
-    db = get_db()
-    ids = list(db['images'].keys())
-    if len(ids) == 0:
-        abort(500, "No artwork was found")
+    # If identifier not provided, return random image
+    if not identifier:
+        ids = list(db['artworks'].keys())
+        if len(ids) == 0:
+            abort(500, "No artwork was found")
 
-    # Select the saved next id as the current id
-    next = db['next']
-    identifier = ids[0] if next == "" else next
+        # Select the saved next id
+        next = db['next']
+        identifier = ids[0] if next == "" else next
 
-    if len(ids) == 1:
-        identifier = ids[0]
-        next = ids[0]
-    else:
-        # Queue random, different image
-        while identifier == next:
-            next = random.choice(ids)
+        if len(ids) == 1:
+            identifier = ids[0]
+            next = ids[0]
+        else:
+            # Queue random, different image
+            while next == "" or identifier == next:
+                next = random.choice(ids)
 
-    # Update next image
-    db['next'] = next
-    set_db(db)
+        # Update next image
+        db['next'] = next
+        save_db(db)
+
+    # Retrieve the image
+    artwork = db['artworks'][identifier]
+    img = Image.open(image_path(identifier))
 
     # Processes the image to the desired dimensions
-    artwork = db['images'][identifier]
-    dimensions = (width, height)
-    img = Image.open(IMAGES_DIR / f"{identifier}.bmp")
-    img = ImageOps.contain(img, dimensions)
-
-    pad = 0xFFFFFF if artwork['pad'] else 0x0
-    img = ImageOps.pad(img, dimensions, color=pad)
+    if width and height:
+        dimensions = (width, height)
+        img = ImageOps.contain(img, dimensions)
+        img = ImageOps.pad(
+            img, dimensions, color=0xFFFFFF if artwork['pad'] else 0x0)
 
     # Send the bitmap image
     img_io = BytesIO()
