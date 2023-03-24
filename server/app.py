@@ -47,15 +47,9 @@ def image_path(identifier):
 ''' Routes '''
 
 
-@app.route("/fetch", methods=['GET'])
-def fetch():
-    if not (identifier := request.args.get('id', type=str)):
-        abort(400, description="Invalid file identifier")
-
-    if identifier not in db['artworks']:
-        abort(400, description="File identifier not found")
-
-    return db['artwork']
+@app.route("/all", methods=['GET'])
+def fetch_all():
+    return db
 
 
 @app.route("/next", methods=['GET', 'PUT'])
@@ -73,6 +67,7 @@ def next_id():
         save_db(db)
     else:
         abort(405)
+        return
 
     return identifier
 
