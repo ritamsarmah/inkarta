@@ -3,7 +3,8 @@ from io import BytesIO
 from pathlib import Path
 from PIL import Image, ImageOps
 
-from flask import Flask, abort, request, send_file
+from flask import Flask, request, make_response, send_file
+from flask import abort as fabort
 
 import json
 import random
@@ -44,6 +45,12 @@ def image_path(identifier):
     return IMAGES_DIR / f"{identifier}.bmp"
 
 
+def abort(status_code, message):
+    response = make_response(message)
+    response.status_code = status_code
+    fabort(response)
+
+
 ''' Routes '''
 
 
@@ -57,17 +64,13 @@ def next_id():
     if request.method == 'GET':
         identifier = db['next']
     elif request.method == 'PUT':
-        if not (identifier := request.args.get('id', type=str)):
-            abort(400, "Invalid file identifier")
+        identifier = request.args.get('id', default="", type=str)
 
         if identifier not in db['artworks']:
-            abort(400, description="File identifier not found")
+            abort(400, "File identifier not found")
 
         db['next'] = identifier
         save_db(db)
-    else:
-        abort(405)
-        return
 
     return identifier
 
@@ -75,10 +78,10 @@ def next_id():
 @app.route("/delete", methods=['DELETE'])
 def delete():
     if not (identifier := request.args.get('id', type=str)):
-        abort(400, description="Invalid file identifier")
+        abort(400, "Invalid file identifier")
 
     if identifier not in db['artworks']:
-        abort(400, description="File identifier not found")
+        abort(400, "File identifier not found")
 
     # Remove file
     image_path(identifier).unlink()
@@ -99,18 +102,18 @@ def delete():
 def upload():
     # Parse response parameters
     if not (file := request.files.get('image')):
-        abort(400, description="Image not provided")
+        abort(400, "Invalid image")
 
     if not (title := request.args.get('title', type=str)):
-        abort(400, description="Invalid title")
+        abort(400, "Invalid title")
 
     # Check file extension
     if not has_valid_extension(file.filename):
-        abort(415, description="Unsupported image file extension")
+        abort(415, "Unsupported image file extension")
 
     artist = request.args.get('artist', default="none", type=str)
     pad = request.args.get('pad', default=True, type=bool)
-    force = request.args.get('force', default=False, type=bool)
+    overwrite = request.args.get('overwrite', default=False, type=bool)
 
     # Convert image to B&W
     img = Image.open(file)  # type: ignore
@@ -121,9 +124,9 @@ def upload():
         .hexdigest()[:16]
 
     # Check that artwork doesn't already exist
-    if not force and identifier in db['artworks']:
+    if not overwrite and identifier in db['artworks']:
         abort(
-            400, description=f"Cancelled upload of duplicate artwork: {title} by {artist}")
+            400, f"Cancelled upload of duplicate artwork: {title} by {artist}")
 
     # Store info to disk
     db['artworks'][identifier] = {
@@ -140,7 +143,7 @@ def upload():
     return "Success", 200
 
 
-@app.route("/image", methods=['GET'])
+@ app.route("/image", methods=['GET'])
 def download():
     identifier = request.args.get('id', type=str)
     width = request.args.get('w', type=int)
