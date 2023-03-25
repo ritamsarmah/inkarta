@@ -41,20 +41,32 @@ struct GalleryView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 
-                PhotosPicker(selection: $viewModel.photosPickerItem, matching: .images, photoLibrary: .shared()) {
+                Button {
+                    viewModel.isShowingFileImporter = true
+                } label: {
                     Image(systemName: "plus")
                 }
             }
             .sheet(isPresented: $viewModel.isShowingUploadSheet, content: {
-                UploadView(viewModel: .init(imageSelection: viewModel.photosPickerItem!))
+                if let url = viewModel.newImageURL {
+                    UploadView(viewModel: .init(imageURL: url))
+                }
+            })
+            .alert("Error", isPresented: $viewModel.isShowingErrorAlert, actions: {
+                Button("OK", role: .cancel) {
+                    viewModel.errorMessage = nil
+                }
+            }, message: {
+                Text(viewModel.errorMessage ?? "")
             })
         }
-        .alert("Error", isPresented: $viewModel.isShowingErrorAlert, actions: {
-            Button("OK", role: .cancel) {
-                viewModel.errorMessage = nil
+        .fileImporter(isPresented: $viewModel.isShowingFileImporter, allowedContentTypes: [.image], onCompletion: { result in
+            guard let imageURL = try? result.get() else {
+                viewModel.errorMessage = "Failed to import the selected image"
+                return
             }
-        }, message: {
-            Text(viewModel.errorMessage ?? "")
+            
+            viewModel.newImageURL = imageURL
         })
         .onAppear {
             Task {

@@ -101,7 +101,7 @@ def delete():
 @app.route("/upload", methods=['POST'])
 def upload():
     # Parse response parameters
-    if not (file := request.files.get('image')):
+    if not (file := request.files.get('file')):
         abort(400, "Invalid image")
 
     if not (title := request.args.get('title', type=str)):

@@ -16,33 +16,30 @@ struct UploadView: View {
     var body: some View {
         NavigationView {
             VStack {
-                switch viewModel.imageState {
-                case .success(let image):
-                    image.resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 400)
-                case .loading:
-                    ProgressView()
-                case .empty:
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.white)
-                case .failure:
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .font(.system(size: 40))
-                        .foregroundColor(.white)
-                }
+                AsyncImage(
+                    url: viewModel.imageURL,
+                    content: { image in
+                        image.resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(maxHeight: 400)
+                    },
+                    placeholder: {
+                        ProgressView()
+                    }
+                )
                 Form {
                     Section {
                         TextField("Title", text: $viewModel.title)
                         TextField("Artist", text: $viewModel.artist)
-                        Toggle("Use Padding", isOn: $viewModel.shouldPad)
+                        Toggle("Allow Padding", isOn: $viewModel.shouldPad)
                     }
                     Section {
-                        Toggle("Overwrite Existing Art", isOn: $viewModel.shouldOverwrite)
+                        Toggle("Overwrite Duplicate", isOn: $viewModel.shouldOverwrite)
                     }
                 }
             }
+            .navigationTitle("Add Artwork")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel", role: .cancel) {
@@ -59,7 +56,7 @@ struct UploadView: View {
                             }
                         }
                     }
-                    .disabled(viewModel.title.isEmpty || viewModel.artist.isEmpty)
+                    .disabled(viewModel.title.isEmpty)
                 }
             }
         }
