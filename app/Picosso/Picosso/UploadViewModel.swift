@@ -13,10 +13,13 @@ class UploadViewModel: ObservableObject {
     
     @Published var imageURL: URL
     
+    var imageData: Data?
+    var uiImage: UIImage?
+    
     @Published var title = ""
     @Published var artist = ""
     @Published var shouldPad = true
-    @Published var shouldOverwrite = true
+    @Published var shouldOverwrite = false
     
     @Published var isShowingErrorAlert = false
     
@@ -30,9 +33,20 @@ class UploadViewModel: ObservableObject {
     
     init(imageURL: URL) {
         self.imageURL = imageURL
+        
+        if imageURL.startAccessingSecurityScopedResource() {
+            if let imageData = try? Data(contentsOf: imageURL) {
+                self.imageData = imageData
+                self.uiImage = UIImage(data: imageData)
+            }
+            
+            imageURL.stopAccessingSecurityScopedResource()
+        }
     }
     
     func upload() async -> Bool {
+        guard let imageData else { return false }
+        
         var components = URLComponents(url: Endpoint.upload.url, resolvingAgainstBaseURL: true)!
         components.queryItems = [
             .init(name: "title", value: title),
@@ -48,8 +62,6 @@ class UploadViewModel: ObservableObject {
         request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
         
         do {
-            guard imageURL.startAccessingSecurityScopedResource() else { return false }
-            
             // Create form data
             let formData = NSMutableData()
             formData.append("--\(boundary)\r\n".data(using: String.Encoding.utf8)!)
@@ -58,17 +70,15 @@ class UploadViewModel: ObservableObject {
             let mimeType = UTType(filenameExtension: imageURL.pathExtension)!.preferredMIMEType!
             formData.append("Content-Type: \(mimeType)\r\n\r\n".data(using: String.Encoding.utf8)!)
             
-            formData.append(try Data(contentsOf: imageURL))
+            formData.append(imageData)
             formData.append("\r\n".data(using: String.Encoding.utf8)!)
             formData.append("--\(boundary)--\r\n".data(using: String.Encoding.utf8)!)
             
             // Send upload request
             let (data, response) = try await URLSession.shared.upload(for: request, from: formData as Data)
-            imageURL.stopAccessingSecurityScopedResource()
             
             return await MainActor.run {
-                if let response = response as? HTTPURLResponse, response.statusCode != 200,
-                   let message = String(data: data, encoding: .utf8) {
+                if let message = Utils.errorMessage(for: response, with: data) {
                     self.errorMessage = message
                     return false
                 }

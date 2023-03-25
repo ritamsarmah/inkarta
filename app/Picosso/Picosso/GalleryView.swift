@@ -19,12 +19,19 @@ struct GalleryView: View {
                     ProgressView()
                 } else {
                     if let artworks = viewModel.artworks {
-                        List(artworks, id:\.id) { artwork in
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(artwork.title)
-                                    .font(.body)
-                                Text(artwork.artist)
-                                    .font(.caption)
+                        List {
+                            ForEach(artworks, id: \.id) { artwork in
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(artwork.title)
+                                        .font(.body)
+                                    Text(artwork.artist)
+                                        .font(.caption)
+                                }
+                            }
+                            .onDelete { indexes in
+                                Task {
+                                    await viewModel.delete(at: indexes)
+                                }
                             }
                         }
                     } else {
@@ -35,23 +42,27 @@ struct GalleryView: View {
             }
             .navigationTitle("Art")
             .toolbar {
-                Button {
-                    viewModel.fetch()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
+                ToolbarItem(placement: .navigationBarLeading) {
+                    EditButton()
                 }
                 
-                Button {
-                    viewModel.isShowingFileImporter = true
-                } label: {
-                    Image(systemName: "plus")
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button(action: fetch) {
+                        Image(systemName: "arrow.clockwise")
+                    }
+                    
+                    Button {
+                        viewModel.isShowingFileImporter = true
+                    } label: {
+                        Image(systemName: "plus")
+                    }
                 }
             }
-            .sheet(isPresented: $viewModel.isShowingUploadSheet, content: {
+            .sheet(isPresented: $viewModel.isShowingUploadSheet, onDismiss: fetch) {
                 if let url = viewModel.newImageURL {
                     UploadView(viewModel: .init(imageURL: url))
                 }
-            })
+            }
             .alert("Error", isPresented: $viewModel.isShowingErrorAlert, actions: {
                 Button("OK", role: .cancel) {
                     viewModel.errorMessage = nil
@@ -68,10 +79,14 @@ struct GalleryView: View {
             
             viewModel.newImageURL = imageURL
         })
-        .onAppear {
-            Task {
-                viewModel.fetch()
-            }
+        .onAppear(perform: fetch)
+    }
+    
+    func fetch() {
+        Task {
+            viewModel.isLoading = true
+            await viewModel.fetch()
+            viewModel.isLoading = false
         }
     }
 }

@@ -16,17 +16,12 @@ struct UploadView: View {
     var body: some View {
         NavigationView {
             VStack {
-                AsyncImage(
-                    url: viewModel.imageURL,
-                    content: { image in
-                        image.resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: 400)
-                    },
-                    placeholder: {
-                        ProgressView()
-                    }
-                )
+                if let uiImage = viewModel.uiImage {
+                    Image(uiImage: uiImage)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 400)
+                }
                 Form {
                     Section {
                         TextField("Title", text: $viewModel.title)
@@ -34,7 +29,7 @@ struct UploadView: View {
                         Toggle("Allow Padding", isOn: $viewModel.shouldPad)
                     }
                     Section {
-                        Toggle("Overwrite Duplicate", isOn: $viewModel.shouldOverwrite)
+                        Toggle("Replace Duplicate", isOn: $viewModel.shouldOverwrite)
                     }
                 }
             }

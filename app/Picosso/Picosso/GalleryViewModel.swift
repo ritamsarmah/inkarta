@@ -11,7 +11,7 @@ import SwiftUI
 class GalleryViewModel: ObservableObject {
     
     @Published var artworks: [Artwork]?
-    @Published var next: String?
+    @Published var next: String? // TODO: Not used yet
     
     @Published var isLoading = false
     @Published var isShowingFileImporter = false
@@ -34,32 +34,61 @@ class GalleryViewModel: ObservableObject {
         }
     }
     
-    func fetch() {
-        isLoading = true
-        
+    func fetch() async {
         let request = URLRequest(url: Endpoint.all.url)
-        Task {
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            try await MainActor.run {
+                if let message = Utils.errorMessage(for: response, with: data) {
+                    self.errorMessage = message
+                    return
+                }
+                
+                let db = try JSONDecoder().decode(FetchResponse.self, from: data)
+                self.artworks = Array(db.artworks.values).sorted(by: { $0.title < $1.title })
+                self.next = db.next
+            }
+        } catch let error {
+            await MainActor.run {
+                self.errorMessage = error.localizedDescription
+            }
+        }
+    }
+    
+    func delete(at indexes: IndexSet) async {
+        guard let artworks = artworks else { return }
+        
+        for index in indexes {
+            let artwork = artworks[index]
+            
+            var components = URLComponents(url: Endpoint.delete.url, resolvingAgainstBaseURL: true)!
+            components.queryItems = [
+                .init(name: "id", value: artwork.id),
+            ]
+            
+            var request = URLRequest(url: components.url!)
+            request.httpMethod = "DELETE"
+            
             do {
                 let (data, response) = try await URLSession.shared.data(for: request)
-
-                try await MainActor.run {
-                    if let response = response as? HTTPURLResponse, response.statusCode != 200 {
-                        self.errorMessage = "Failed to fetch artwork with status: \(response.statusCode)"
-                        self.isLoading = false
+                
+                await MainActor.run {
+                    if let errorMessage = Utils.errorMessage(for: response, with: data) {
+                        self.errorMessage = errorMessage
                         return
                     }
-
-                    let db = try JSONDecoder().decode(FetchResponse.self, from: data)
-                    self.artworks = Array(db.artworks.values).sorted(by: { $0.title < $1.title })
-                    self.next = db.next
-                    self.isLoading = false
                 }
             } catch let error {
                 await MainActor.run {
                     self.errorMessage = error.localizedDescription
-                    self.isLoading = false
                 }
             }
+        }
+        
+        await MainActor.run {
+            self.artworks!.remove(atOffsets: indexes)
         }
     }
 }
