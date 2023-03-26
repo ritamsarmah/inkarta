@@ -17,30 +17,32 @@ struct GalleryView: View {
             Group {
                 if viewModel.isLoading {
                     ProgressView()
-                } else {
-                    if let artworks = viewModel.artworks {
-                        List {
-                            ForEach(artworks, id: \.id) { artwork in
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text(artwork.title)
-                                        .font(.body)
-                                    Text(artwork.artist)
-                                        .font(.caption)
-                                }
-                            }
-//                            .onTapGesture(perform: {
-//                                print(
-//                            })
-                            .onDelete { indexes in
-                                Task {
-                                    await viewModel.delete(at: indexes)
+                } else if let artworks = viewModel.artworks {
+                    List {
+                        ForEach(artworks) { artwork in
+                            NavigationLink {
+                                DetailView(viewModel: .init(artwork: artwork))
+                            } label: {
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 4) {
+                                        Text(artwork.title)
+                                            .font(.body)
+                                        Text(artwork.artist)
+                                            .font(.caption)
+                                    }
+                                    Spacer()
                                 }
                             }
                         }
-                    } else {
-                        Text("No artwork available")
-                            .foregroundColor(.secondary)
+                        .onDelete { indexes in
+                            Task {
+                                await viewModel.delete(at: indexes)
+                            }
+                        }
                     }
+                } else {
+                    Text("No artwork available")
+                        .foregroundColor(.secondary)
                 }
             }
             .navigationTitle("Art")
@@ -61,9 +63,9 @@ struct GalleryView: View {
                     }
                 }
             }
-            .sheet(isPresented: $viewModel.isShowingUploadSheet, onDismiss: fetch) {
+            .sheet(isPresented: $viewModel.isShowingUploadView, onDismiss: fetch) {
                 if let url = viewModel.uploadImageURL {
-                    DetailView(viewModel: .init(imageURL: url))
+                    UploadView(viewModel: .init(imageURL: url))
                 }
             }
             .errorAlert(info: viewModel.errorInfo)

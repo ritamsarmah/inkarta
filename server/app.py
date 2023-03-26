@@ -148,11 +148,6 @@ def upload():
     return "Success", 200
 
 
-# @app.route("/update", methods['PUT'])
-# def update_artwork():
-#     ''' Update data for artwork '''
-#
-
 @app.route("/image", methods=['GET'])
 def download():
     ''' Retrieve artwork, either randomly or by ID, with optional dimensions '''

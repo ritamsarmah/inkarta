@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3564872829CD4ECE0085EBF9 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3564872729CD4ECE0085EBF9 /* DetailView.swift */; };
+		3564872829CD4ECE0085EBF9 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3564872729CD4ECE0085EBF9 /* UploadView.swift */; };
 		3564872D29CD4F480085EBF9 /* Artwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3564872C29CD4F480085EBF9 /* Artwork.swift */; };
 		3564872F29CD4F860085EBF9 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3564872E29CD4F860085EBF9 /* Endpoint.swift */; };
 		3564873129CD50150085EBF9 /* DetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3564873029CD50150085EBF9 /* DetailViewModel.swift */; };
@@ -19,10 +19,11 @@
 		35A6C41D29CF75E600C5E983 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35A6C41C29CF75E600C5E983 /* Utils.swift */; };
 		35E9EBE129D0C30C00BF4B51 /* UploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E9EBE029D0C30C00BF4B51 /* UploadViewModel.swift */; };
 		35E9EBE329D0C37300BF4B51 /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E9EBE229D0C37300BF4B51 /* ErrorAlert.swift */; };
+		35E9EBE529D0C97D00BF4B51 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35E9EBE429D0C97D00BF4B51 /* DetailView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		3564872729CD4ECE0085EBF9 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
+		3564872729CD4ECE0085EBF9 /* UploadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadView.swift; sourceTree = "<group>"; };
 		3564872C29CD4F480085EBF9 /* Artwork.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Artwork.swift; sourceTree = "<group>"; };
 		3564872E29CD4F860085EBF9 /* Endpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Endpoint.swift; sourceTree = "<group>"; };
 		3564873029CD50150085EBF9 /* DetailViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailViewModel.swift; sourceTree = "<group>"; };
@@ -36,6 +37,7 @@
 		35A6C41C29CF75E600C5E983 /* Utils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
 		35E9EBE029D0C30C00BF4B51 /* UploadViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UploadViewModel.swift; sourceTree = "<group>"; };
 		35E9EBE229D0C37300BF4B51 /* ErrorAlert.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
+		35E9EBE429D0C97D00BF4B51 /* DetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -89,10 +91,11 @@
 		35A1645D29CAC0A400FD2680 /* Picosso */ = {
 			isa = PBXGroup;
 			children = (
+				35E9EBE429D0C97D00BF4B51 /* DetailView.swift */,
+				3564873029CD50150085EBF9 /* DetailViewModel.swift */,
 				35A1646029CAC0A400FD2680 /* GalleryView.swift */,
 				35A1646E29CAC0EC00FD2680 /* GalleryViewModel.swift */,
-				3564872729CD4ECE0085EBF9 /* DetailView.swift */,
-				3564873029CD50150085EBF9 /* DetailViewModel.swift */,
+				3564872729CD4ECE0085EBF9 /* UploadView.swift */,
 				35E9EBE029D0C30C00BF4B51 /* UploadViewModel.swift */,
 				3564872B29CD4F410085EBF9 /* Models */,
 				3564873229CD50690085EBF9 /* Supporting Files */,
@@ -184,10 +187,11 @@
 				35E9EBE129D0C30C00BF4B51 /* UploadViewModel.swift in Sources */,
 				3564872D29CD4F480085EBF9 /* Artwork.swift in Sources */,
 				35A1646129CAC0A400FD2680 /* GalleryView.swift in Sources */,
+				35E9EBE529D0C97D00BF4B51 /* DetailView.swift in Sources */,
 				35A1645F29CAC0A400FD2680 /* PicossoApp.swift in Sources */,
 				35A1646F29CAC0EC00FD2680 /* GalleryViewModel.swift in Sources */,
 				3564872F29CD4F860085EBF9 /* Endpoint.swift in Sources */,
-				3564872829CD4ECE0085EBF9 /* DetailView.swift in Sources */,
+				3564872829CD4ECE0085EBF9 /* UploadView.swift in Sources */,
 				35A6C41D29CF75E600C5E983 /* Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

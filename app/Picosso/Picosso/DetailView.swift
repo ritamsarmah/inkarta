@@ -16,52 +16,26 @@ struct DetailView: View {
     var body: some View {
         NavigationView {
             VStack {
-                if let uiImage = viewModel.uiImage {
-                    Image(uiImage: uiImage)
+                AsyncImage(url: viewModel.imageURL) { image in
+                    image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 400)
-                }
-                
-                Form {
-                    Section {
-                        TextField("Title", text: $viewModel.title)
-                        TextField("Artist", text: $viewModel.artist)
-                        Toggle("Allow White Padding", isOn: $viewModel.shouldPad)
-                    }
-                    
-                    Section {
-                        Toggle("Replace Existing Art", isOn: $viewModel.shouldOverwrite)
-                    }
+                        .frame(maxHeight: 500)
+                } placeholder: {
+                    ProgressView()
                 }
             }
-            .navigationTitle("Add Artwork")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel", role: .cancel) {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
-                        Task {
-                            if await viewModel.save() {
-                                dismiss()
-                            }
-                        }
-                    }
-                    .disabled(viewModel.title.isEmpty)
-                }
-            }
+            .navigationBarItems(leading: VStack(alignment: .leading, spacing: 5) {
+                Text(viewModel.title)
+                    .font(.system(size: 35, weight: .semibold, design: .default))
+                Text(viewModel.artist)
+            })
         }
-        .errorAlert(info: viewModel.errorInfo)
     }
 }
 
-//struct UploadView_Previews: PreviewProvider {
+//struct DetailView_Previews: PreviewProvider {
 //    static var previews: some View {
-//        DetailView()
+//        UploadView()
 //    }
 //}

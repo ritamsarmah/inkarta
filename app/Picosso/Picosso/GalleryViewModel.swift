@@ -15,14 +15,14 @@ class GalleryViewModel: ObservableObject {
     
     @Published var isLoading = false
     @Published var isShowingFileImporter = false
-    @Published var isShowingUploadSheet = false
+    @Published var isShowingUploadView = false
     
     @Published var errorInfo = ErrorAlert.Info()
     
     var uploadImageURL: URL? {
         didSet {
             if uploadImageURL != nil {
-                isShowingUploadSheet = true
+                isShowingUploadView = true
             }
         }
     }
