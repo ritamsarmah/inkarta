@@ -28,6 +28,9 @@ struct GalleryView: View {
                                         .font(.caption)
                                 }
                             }
+//                            .onTapGesture(perform: {
+//                                print(
+//                            })
                             .onDelete { indexes in
                                 Task {
                                     await viewModel.delete(at: indexes)
@@ -59,26 +62,13 @@ struct GalleryView: View {
                 }
             }
             .sheet(isPresented: $viewModel.isShowingUploadSheet, onDismiss: fetch) {
-                if let url = viewModel.newImageURL {
-                    UploadView(viewModel: .init(imageURL: url))
+                if let url = viewModel.uploadImageURL {
+                    DetailView(viewModel: .init(imageURL: url))
                 }
             }
-            .alert("Error", isPresented: $viewModel.isShowingErrorAlert, actions: {
-                Button("OK", role: .cancel) {
-                    viewModel.errorMessage = nil
-                }
-            }, message: {
-                Text(viewModel.errorMessage ?? "")
-            })
+            .errorAlert(info: viewModel.errorInfo)
         }
-        .fileImporter(isPresented: $viewModel.isShowingFileImporter, allowedContentTypes: [.image], onCompletion: { result in
-            guard let imageURL = try? result.get() else {
-                viewModel.errorMessage = "Failed to import the selected image"
-                return
-            }
-            
-            viewModel.newImageURL = imageURL
-        })
+        .fileImporter(isPresented: $viewModel.isShowingFileImporter, allowedContentTypes: [.image], onCompletion: viewModel.onImportFile)
         .onAppear(perform: fetch)
     }
     

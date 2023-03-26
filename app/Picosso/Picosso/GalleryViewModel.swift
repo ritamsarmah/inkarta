@@ -16,19 +16,12 @@ class GalleryViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var isShowingFileImporter = false
     @Published var isShowingUploadSheet = false
-    @Published var isShowingErrorAlert = false
     
-    @Published var errorMessage: String? {
-        didSet {
-            if oldValue == nil {
-                isShowingErrorAlert = true
-            }
-        }
-    }
+    @Published var errorInfo = ErrorAlert.Info()
     
-    var newImageURL: URL? {
+    var uploadImageURL: URL? {
         didSet {
-            if newImageURL != nil {
+            if uploadImageURL != nil {
                 isShowingUploadSheet = true
             }
         }
@@ -42,7 +35,7 @@ class GalleryViewModel: ObservableObject {
             
             try await MainActor.run {
                 if let message = Utils.errorMessage(for: response, with: data) {
-                    self.errorMessage = message
+                    self.errorInfo.message = message
                     return
                 }
                 
@@ -52,7 +45,7 @@ class GalleryViewModel: ObservableObject {
             }
         } catch let error {
             await MainActor.run {
-                self.errorMessage = error.localizedDescription
+                self.errorInfo.message = error.localizedDescription
             }
         }
     }
@@ -76,13 +69,13 @@ class GalleryViewModel: ObservableObject {
                 
                 await MainActor.run {
                     if let errorMessage = Utils.errorMessage(for: response, with: data) {
-                        self.errorMessage = errorMessage
+                        self.errorInfo.message = errorMessage
                         return
                     }
                 }
             } catch let error {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
+                    self.errorInfo.message = error.localizedDescription
                 }
             }
         }
@@ -90,5 +83,14 @@ class GalleryViewModel: ObservableObject {
         await MainActor.run {
             self.artworks!.remove(atOffsets: indexes)
         }
+    }
+    
+    func onImportFile(result: Result<URL, Error>) {
+        guard let imageURL = try? result.get() else {
+            errorInfo.message = "Failed to import the selected image"
+            return
+        }
+        
+        uploadImageURL = imageURL
     }
 }

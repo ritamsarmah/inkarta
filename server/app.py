@@ -56,11 +56,14 @@ def abort(status_code, message):
 
 @app.route("/all", methods=['GET'])
 def fetch_all():
+    ''' Returns entire database '''
     return db
 
 
 @app.route("/next", methods=['GET', 'PUT'])
 def next_id():
+    ''' Retrieve or set the next artwork returned by /image '''
+
     if request.method == 'GET':
         identifier = db['next']
     elif request.method == 'PUT':
@@ -72,11 +75,13 @@ def next_id():
         db['next'] = identifier
         save_db(db)
 
-    return identifier
+    return identifier  # type: ignore
 
 
 @app.route("/delete", methods=['DELETE'])
 def delete():
+    ''' Delete artwork by id '''
+
     if not (identifier := request.args.get('id', type=str)):
         abort(400, "Invalid file identifier")
 
@@ -100,6 +105,8 @@ def delete():
 
 @app.route("/upload", methods=['POST'])
 def upload():
+    ''' Upload new artwork '''
+
     # Parse response parameters
     if not (file := request.files.get('file')):
         abort(400, "Invalid image")
@@ -108,16 +115,12 @@ def upload():
         abort(400, "Invalid title")
 
     # Check file extension
-    if not has_valid_extension(file.filename):
+    if not has_valid_extension(file.filename):  # type: ignore
         abort(415, "Unsupported image file extension")
 
-    artist = request.args.get('artist', default="none", type=str)
+    artist = request.args.get('artist', default="Anonymous", type=str)
     pad = request.args.get('pad', default=True, type=bool)
     overwrite = request.args.get('overwrite', default=False, type=bool)
-
-    # Convert image to B&W
-    img = Image.open(file)  # type: ignore
-    img = img.convert('1', dither=Image.NONE)
 
     # Create unique identifier by hashing title and artist
     identifier = md5(f"{title}{artist}".encode()) \
@@ -137,14 +140,23 @@ def upload():
     }
     save_db(db)
 
-    # Save image
+    # Convert image to B&W and save
+    img = Image.open(file)  # type: ignore
+    img = img.convert('1', dither=Image.NONE)
     img.save(image_path(identifier))
 
     return "Success", 200
 
 
-@ app.route("/image", methods=['GET'])
+# @app.route("/update", methods['PUT'])
+# def update_artwork():
+#     ''' Update data for artwork '''
+#
+
+@app.route("/image", methods=['GET'])
 def download():
+    ''' Retrieve artwork, either randomly or by ID, with optional dimensions '''
+
     identifier = request.args.get('id', type=str)
     width = request.args.get('w', type=int)
     height = request.args.get('h', type=int)

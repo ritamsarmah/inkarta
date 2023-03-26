@@ -1,5 +1,5 @@
 //
-//  UploadView.swift
+//  DetailView.swift
 //  Picosso
 //
 //  Created by Ritam Sarmah on 3/23/23.
@@ -7,11 +7,11 @@
 
 import SwiftUI
 
-struct UploadView: View {
+struct DetailView: View {
     
     @Environment(\.dismiss) var dismiss
     
-    @ObservedObject var viewModel: UploadViewModel
+    @ObservedObject var viewModel: DetailViewModel
     
     var body: some View {
         NavigationView {
@@ -22,14 +22,16 @@ struct UploadView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(maxHeight: 400)
                 }
+                
                 Form {
                     Section {
                         TextField("Title", text: $viewModel.title)
                         TextField("Artist", text: $viewModel.artist)
-                        Toggle("Allow Padding", isOn: $viewModel.shouldPad)
+                        Toggle("Allow White Padding", isOn: $viewModel.shouldPad)
                     }
+                    
                     Section {
-                        Toggle("Replace Duplicate", isOn: $viewModel.shouldOverwrite)
+                        Toggle("Replace Existing Art", isOn: $viewModel.shouldOverwrite)
                     }
                 }
             }
@@ -43,10 +45,9 @@ struct UploadView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Upload") {
+                    Button("Save") {
                         Task {
-                            let success = await viewModel.upload()
-                            if success {
+                            if await viewModel.save() {
                                 dismiss()
                             }
                         }
@@ -55,18 +56,12 @@ struct UploadView: View {
                 }
             }
         }
-        .alert("Error", isPresented: $viewModel.isShowingErrorAlert, actions: {
-            Button("OK", role: .cancel) {
-                viewModel.errorMessage = nil
-            }
-        }, message: {
-            Text(viewModel.errorMessage ?? "")
-        })
+        .errorAlert(info: viewModel.errorInfo)
     }
 }
 
 //struct UploadView_Previews: PreviewProvider {
 //    static var previews: some View {
-//        UploadView()
+//        DetailView()
 //    }
 //}
