@@ -14,8 +14,17 @@ struct DetailView: View {
     @ObservedObject var viewModel: DetailViewModel
     
     var body: some View {
-        NavigationView {
-            VStack {
+        HStack {
+            Spacer()
+            VStack(spacing: 4) {
+                Text(viewModel.artwork.title)
+                    .font(.title)
+                    .fontWeight(.bold)
+                    .multilineTextAlignment(.center)
+                Text(viewModel.artwork.artist)
+                
+                Spacer()
+                
                 AsyncImage(url: viewModel.imageURL) { image in
                     image
                         .resizable()
@@ -24,13 +33,13 @@ struct DetailView: View {
                 } placeholder: {
                     ProgressView()
                 }
+                
+                Spacer()
             }
-            .navigationBarItems(leading: VStack(alignment: .leading, spacing: 5) {
-                Text(viewModel.title)
-                    .font(.system(size: 35, weight: .semibold, design: .default))
-                Text(viewModel.artist)
-            })
+            Spacer()
         }
+        .foregroundColor(viewModel.artwork.dark ? Color.white : Color.black)
+        .background(viewModel.artwork.dark ? Color.black : Color.white)
     }
 }
 

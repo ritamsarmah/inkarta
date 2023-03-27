@@ -27,11 +27,11 @@ struct UploadView: View {
                     Section {
                         TextField("Title", text: $viewModel.title)
                         TextField("Artist", text: $viewModel.artist)
-                        Toggle("Pad White", isOn: $viewModel.shouldPad)
+                        Toggle("Use Dark Background", isOn: $viewModel.useDarkBackground)
                     }
                     
                     Section {
-                        Toggle("Replace Existing", isOn: $viewModel.shouldOverwrite)
+                        Toggle("Replace Existing", isOn: $viewModel.canOverwrite)
                     }
                 }
             }

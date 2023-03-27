@@ -119,7 +119,7 @@ def upload():
         abort(415, "Unsupported image file extension")
 
     artist = request.args.get('artist', default="Anonymous", type=str)
-    pad = request.args.get('pad', default=True, type=bool)
+    dark = request.args.get('dark', default=False, type=bool)
     overwrite = request.args.get('overwrite', default=False, type=bool)
 
     # Create unique identifier by hashing title and artist
@@ -136,7 +136,7 @@ def upload():
         'id': identifier,
         'title': title,
         'artist': artist,
-        'pad': pad
+        'dark': dark
     }
     save_db(db)
 
@@ -187,7 +187,7 @@ def download():
         dimensions = (width, height)
         img = ImageOps.contain(img, dimensions)
         img = ImageOps.pad(
-            img, dimensions, color=0xFFFFFF if artwork['pad'] else 0x0)
+            img, dimensions, color=0x0 if artwork['dark'] else 0xFFFFFF)
 
     # Send the bitmap image
     img_io = BytesIO()

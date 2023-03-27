@@ -13,8 +13,8 @@ class UploadViewModel: ObservableObject {
     @Published var image: UIImage?
     @Published var title = ""
     @Published var artist = ""
-    @Published var shouldPad = true
-    @Published var shouldOverwrite = false
+    @Published var useDarkBackground = false
+    @Published var canOverwrite = false
     @Published var errorInfo = ErrorAlert.Info()
     
     private let imageURL: URL
@@ -41,8 +41,8 @@ class UploadViewModel: ObservableObject {
         components.queryItems = [
             .init(name: "title", value: title),
             .init(name: "artist", value: artist),
-            .init(name: "pad", value: "\(shouldPad)"),
-            .init(name: "overwrite", value: "\(shouldOverwrite)")
+            .init(name: "dark", value: "\(useDarkBackground)"),
+            .init(name: "overwrite", value: "\(canOverwrite)")
         ]
         
         var request = URLRequest(url: components.url!)

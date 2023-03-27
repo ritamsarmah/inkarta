@@ -9,5 +9,5 @@ struct Artwork: Codable, Identifiable {
     let id: String
     let title: String
     let artist: String
-    let pad: Bool
+    let dark: Bool
 }
