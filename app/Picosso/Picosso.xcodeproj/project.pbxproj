@@ -91,12 +91,8 @@
 		35A1645D29CAC0A400FD2680 /* Picosso */ = {
 			isa = PBXGroup;
 			children = (
-				35E9EBE429D0C97D00BF4B51 /* DetailView.swift */,
-				3564873029CD50150085EBF9 /* DetailViewModel.swift */,
-				35A1646029CAC0A400FD2680 /* GalleryView.swift */,
-				35A1646E29CAC0EC00FD2680 /* GalleryViewModel.swift */,
-				3564872729CD4ECE0085EBF9 /* UploadView.swift */,
-				35E9EBE029D0C30C00BF4B51 /* UploadViewModel.swift */,
+				35C2FDB129DB21D80083FDFA /* Views */,
+				35C2FDAF29DB21CD0083FDFA /* View Models */,
 				3564872B29CD4F410085EBF9 /* Models */,
 				3564873229CD50690085EBF9 /* Supporting Files */,
 				35A1646429CAC0A500FD2680 /* Preview Content */,
@@ -110,6 +106,26 @@
 				35A1646529CAC0A500FD2680 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		35C2FDAF29DB21CD0083FDFA /* View Models */ = {
+			isa = PBXGroup;
+			children = (
+				3564873029CD50150085EBF9 /* DetailViewModel.swift */,
+				35A1646E29CAC0EC00FD2680 /* GalleryViewModel.swift */,
+				35E9EBE029D0C30C00BF4B51 /* UploadViewModel.swift */,
+			);
+			path = "View Models";
+			sourceTree = "<group>";
+		};
+		35C2FDB129DB21D80083FDFA /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				35E9EBE429D0C97D00BF4B51 /* DetailView.swift */,
+				35A1646029CAC0A400FD2680 /* GalleryView.swift */,
+				3564872729CD4ECE0085EBF9 /* UploadView.swift */,
+			);
+			path = Views;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */

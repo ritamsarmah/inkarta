@@ -8,7 +8,7 @@
 import Foundation
 
 enum Endpoint: String {
-    private static let baseURL = URL(string: "http://192.168.1.25:5000")! // TODO: Update make this settable from app
+    private static let baseURL = URL(string: "http://192.168.1.50:5000")!
     
     case all = "/all"       // Get all data
     case image = "/image"   // Retrieve image for artwork

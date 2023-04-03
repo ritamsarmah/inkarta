@@ -32,6 +32,7 @@ struct DetailView: View {
                         .frame(maxHeight: 500)
                 } placeholder: {
                     ProgressView()
+                        .tint(viewModel.artwork.dark ? .white : .gray)
                 }
                 
                 Spacer()

@@ -82,7 +82,8 @@ def next_id():
 def delete():
     ''' Delete artwork by id '''
 
-    if not (identifier := request.args.get('id', type=str)):
+    identifier = request.args.get('id', type=str)
+    if not identifier:
         abort(400, "Invalid file identifier")
 
     if identifier not in db['artworks']:
@@ -108,10 +109,12 @@ def upload():
     ''' Upload new artwork '''
 
     # Parse response parameters
-    if not (file := request.files.get('file')):
+    file = request.files.get('file')
+    if not file:
         abort(400, "Invalid image")
 
-    if not (title := request.args.get('title', type=str)):
+    title = request.args.get('title', type=str)
+    if not title:
         abort(400, "Invalid title")
 
     # Check file extension
@@ -194,3 +197,7 @@ def download():
     img.save(img_io, 'BMP')
     img_io.seek(0)
     return send_file(img_io, mimetype='image/bmp')
+
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=5000, debug=False)
