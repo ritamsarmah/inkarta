@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct DetailView: View {
     
@@ -41,6 +42,15 @@ struct DetailView: View {
         }
         .foregroundColor(viewModel.artwork.dark ? Color.white : Color.black)
         .background(viewModel.artwork.dark ? Color.black : Color.white)
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    UIPasteboard.general.setValue(viewModel.artwork.id, forPasteboardType: UTType.plainText.identifier)
+                } label: {
+                    Image(systemName: "doc.on.doc")
+                }
+            }
+        }
     }
 }
 
