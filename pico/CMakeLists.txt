@@ -11,7 +11,7 @@ set(CMAKE_CXX_STANDARD 17)
 pico_sdk_init()
 
 add_executable(${NAME}
-    src/main.cpp
+    main.cpp
 )
 
 # Enable usb output, disable uart output
