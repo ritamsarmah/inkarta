@@ -1,6 +1,9 @@
-# Ignore server data files and directories
+# Server data files and directories
 images/
 db.json
+
+# Secrets file
+secrets.hpp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
