@@ -1,1 +1,2 @@
+AllowShortIfStatementsOnASingleLine: WithoutElse
 IndentWidth: 4

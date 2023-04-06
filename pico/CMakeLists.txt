@@ -5,6 +5,8 @@ set(NAME picosso)
 include(pico_sdk_import.cmake)
 
 project(${NAME} C CXX ASM)
+set(PICO_BOARD "pico_w")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 
@@ -24,6 +26,7 @@ pico_add_extra_outputs(${NAME})
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
 target_link_libraries(${NAME}
-    pico_cyw43_arch_lwip_threadsafe_background
     pico_stdlib
+    pico_cyw43_arch_lwip_threadsafe_background
+    pico_lwip_http
 )
