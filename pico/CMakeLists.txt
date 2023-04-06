@@ -28,5 +28,4 @@ target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${NAME}
     pico_stdlib
     pico_cyw43_arch_lwip_threadsafe_background
-    pico_lwip_http
 )
