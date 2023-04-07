@@ -14,6 +14,7 @@
 err_t tcp_client_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
 err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
                       err_t err);
+void tcp_client_err(void *arg, err_t err);
 
 /* Globals */
 
@@ -33,14 +34,16 @@ const std::string request = "GET " + path + " HTTP/1.1\r\n\
     Connection: close\r\n\r\n";
 
 const u8_t poll_interval_s = 10;
-const u32_t max_file_size = 1 * 1024 * 1024; // 1 MB
-const u32_t buffer_size = 8 * 1024;          // 8 KB
+const u32_t buffer_size = 8 * 1024; // 8 KB (800x480 image -> 48KB)
 
 // TCP connection state
-u8_t buffer[buffer_size];
-int buffer_len = 0;
-bool connected = false;
-bool completed = false;
+typedef struct tcp_client_state {
+    struct tcp_pcb *tpcb;
+    u8_t buffer[buffer_size];
+    int buffer_len;
+    bool connected;
+    bool completed;
+} tcp_client_state;
 
 /* Networking */
 
@@ -70,51 +73,52 @@ void wifi_disconnect() {
 
 /* TCP */
 
-bool tcp_client_open(struct tcp_pcb *tpcb) {
-    // Reset connection state
-    std::fill(buffer, buffer + buffer_size, 0);
-    buffer_len = 0;
-    connected = false;
-    completed = false;
-
-    tpcb = tcp_new();
-    if (tpcb == NULL) {
+bool tcp_client_open(tcp_client_state *state) {
+    state->tpcb = tcp_new();
+    if (state->tpcb == NULL) {
         printf("Failed to create TCP PCB\n");
         return false;
     }
 
-    tcp_recv(tpcb, tcp_client_recv);
+    tcp_arg(state->tpcb, state);
+    tcp_recv(state->tpcb, tcp_client_recv);
+    tcp_err(state->tpcb, tcp_client_err);
 
     ip_addr_t server_addr;
     ip4_addr_set_u32(&server_addr, ipaddr_addr(host.c_str()));
 
     cyw43_arch_lwip_begin();
-    err_t err = tcp_connect(tpcb, &server_addr, port, tcp_client_connected);
+    err_t err =
+        tcp_connect(state->tpcb, &server_addr, port, tcp_client_connected);
     cyw43_arch_lwip_end();
 
     return err == ERR_OK;
 }
 
-err_t tcp_client_close(struct tcp_pcb *tpcb) {
-    if (tpcb == NULL) return ERR_OK;
+err_t tcp_client_close(tcp_client_state *state) {
+    if (state->tpcb == NULL) return ERR_OK;
 
-    tcp_recv(tpcb, NULL);
+    tcp_arg(state->tpcb, NULL);
+    tcp_recv(state->tpcb, NULL);
+    tcp_err(state->tpcb, NULL);
 
-    err_t err = tcp_close(tpcb);
+    err_t err = tcp_close(state->tpcb);
     if (err != ERR_OK) {
         printf("Failed to close TCP connection %d. Aborting...\n", err);
-        tcp_abort(tpcb);
+        tcp_abort(state->tpcb);
         err = ERR_ABRT;
     }
 
     return err;
 }
 
-err_t tcp_client_finish(struct tcp_pcb *tpcb, int status, std::string message) {
+err_t tcp_client_finish(tcp_client_state *state, int status,
+                        std::string message) {
     printf("%s (%d)\n", message.c_str(), status);
-    completed = true;
-    err_t err = tcp_client_close(tpcb);
-    connected = false;
+
+    state->completed = true;
+    err_t err = tcp_client_close(state);
+    state->connected = false;
 
     return err;
 }
@@ -122,40 +126,51 @@ err_t tcp_client_finish(struct tcp_pcb *tpcb, int status, std::string message) {
 /* TCP Callbacks */
 
 err_t tcp_client_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
+    tcp_client_state *state = (tcp_client_state *)arg;
+
     if (err != ERR_OK) {
-        return tcp_client_finish(tpcb, err, "Failed to connect to server");
+        return tcp_client_finish(state, err, "Failed to connect to server");
     }
 
     printf("Connected to server: %s\n", host.c_str());
-    connected = true;
+    state->connected = true;
     return ERR_OK;
 }
 
 err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
                       err_t err) {
+    tcp_client_state *state = (tcp_client_state *)arg;
+
     // A NULL pbuf indicates remote host has closed the connection
     if (p == NULL) {
-        return tcp_client_finish(tpcb, 0, "Connection closed");
+        return tcp_client_finish(state, 0, "Connection closed");
     }
 
     cyw43_arch_lwip_check();
     if (p->tot_len > 0) {
-        printf("recv %d err %d\n", p->tot_len, err); // TODO: Remove debug
-
-        // For 296x128 image -> file size is 5KB
-        // For 800x480 image -> file size is 48KB
+        printf("recv %d err %d\n", p->tot_len, err);
 
         // Receive the buffer
-        const u16_t buffer_left = buffer_size - buffer_len;
-        buffer_len += pbuf_copy_partial(
-            p, buffer + buffer_len,
+        const u16_t buffer_left = buffer_size - state->buffer_len;
+        state->buffer_len += pbuf_copy_partial(
+            p, state->buffer + state->buffer_len,
             p->tot_len > buffer_left ? buffer_left : p->tot_len, 0);
         tcp_recved(tpcb, p->tot_len);
+
+        // TODO: Parse buffer for image data
+        printf("%s\n", state->buffer);
     }
 
     pbuf_free(p);
 
     return ERR_OK;
+}
+
+void tcp_client_err(void *arg, err_t err) {
+    if (err != ERR_ABRT) {
+        tcp_client_finish((tcp_client_state *)arg, err,
+                          "An error occurred with the TCP connection");
+    }
 }
 
 /* High-Level Logic */
@@ -166,34 +181,34 @@ void print_image() {
 
 bool download_image() {
     // Open connection to server
-    struct tcp_pcb *tpcb;
-    if (!tcp_client_open(tpcb)) {
-        tcp_client_finish(tpcb, -1, "Failed to open TCP connection");
+    tcp_client_state *state = new tcp_client_state();
+    if (!tcp_client_open(state)) {
+        tcp_client_finish(state, -1, "Failed to open TCP connection");
+        delete state;
         return false;
     }
 
     // Wait until connected to server
-    while (!connected) {
+    while (!state->connected) {
         cyw43_arch_wait_for_work_until(make_timeout_time_ms(1000));
     }
 
     // Send HTTP request
-    err_t err =
-        tcp_write(tpcb, request.c_str(), request.length(), TCP_WRITE_FLAG_COPY);
+    err_t err = tcp_write(state->tpcb, request.c_str(), request.length(),
+                          TCP_WRITE_FLAG_COPY);
     if (err != ERR_OK) {
-        tcp_client_finish(tpcb, -1, "Failed to send HTTP request");
+        tcp_client_finish(state, -1, "Failed to send HTTP request");
+        delete state;
         return false;
     }
 
     // Wait for response
-    while (!completed) {
+    while (!state->completed) {
         cyw43_arch_poll();
         cyw43_arch_wait_for_work_until(make_timeout_time_ms(1000));
     }
 
-    // TODO: Parse buffer for image data
-    printf("%s\n", buffer);
-
+    delete state;
     return true;
 }
 
