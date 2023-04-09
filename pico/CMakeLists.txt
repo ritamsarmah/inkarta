@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 
 set(NAME picosso)
+set(ENV{PICO_SDK_PATH} "../../pico-sdk/")
 
 include(pico_sdk_import.cmake)
 
@@ -28,4 +29,5 @@ target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 target_link_libraries(${NAME}
     pico_stdlib
     pico_cyw43_arch_lwip_threadsafe_background
+    hardware_flash
 )

@@ -1,4 +1,5 @@
 #include "hardware/flash.h"
+#include "hardware/sync.h"
 #include "lwip/tcp.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
@@ -23,6 +24,7 @@ const u32_t height_px = 128;
 
 const u32_t country = CYW43_COUNTRY_USA;
 const u32_t auth = CYW43_AUTH_WPA2_AES_PSK;
+const u8_t poll_interval_s = 10;
 
 const std::string host = "192.168.1.25"; // TODO: Change to rpi (5)
 const u16_t port = 5000;
@@ -35,15 +37,27 @@ const std::string request = "GET " + path + " HTTP/1.1\r\n\
     Host: " + host + "\r\n\
     Connection: close\r\n\r\n";
 
-const u8_t poll_interval_s = 10;
-const u32_t buffer_size = 8 * 1024; // 8 KB
+// Data
+const u32_t buffer_size = FLASH_PAGE_SIZE * 4; // 1 KB
+
+/**
+ * Use region of 64KB from end of flash for storing image.
+ * This is to avoid overwriting program written from front of flash.
+ *
+ * NOTE: Whole number of sectors must be erased at a time, hence the
+ * target size being specified with FLASH_SECTOR_SIZE for ease of use.
+ */
+const size_t flash_target_size = FLASH_SECTOR_SIZE; // 4 KB (TODO: 16 for 64 KB)
+const u32_t flash_target_offset = PICO_FLASH_SIZE_BYTES - flash_target_size;
+const u8_t *flash_target_data = (const u8_t *)(XIP_BASE + flash_target_offset);
 
 // TCP connection state
 typedef struct tcp_client_state {
     struct tcp_pcb *tpcb;
     u8_t buffer[buffer_size];
-    int buffer_len;
-    int recv_count;
+    size_t buffer_len;
+    size_t flash_len;
+    u32_t recv_count;
     bool connected;
     bool completed;
 } tcp_client_state;
@@ -86,9 +100,15 @@ tcp_client_state *tcp_client_init() {
     }
 
     state->buffer_len = 0;
+    state->flash_len = 0;
     state->recv_count = 0;
     state->connected = false;
     state->completed = false;
+
+    // Prepare flash target region for storing image data
+    // uint32_t ints = save_and_disable_interrupts();
+    // flash_range_erase(flash_target_offset, flash_target_size);
+    // restore_interrupts(ints);
 
     return state;
 }
@@ -137,6 +157,68 @@ err_t tcp_client_finish(tcp_client_state *state, int status,
     return err;
 }
 
+/* Flash */
+
+// TODO: delete
+void print_buf(const u8_t *buf, size_t len) {
+    printf("--- Start Buffer ---\n");
+    for (size_t i = 0; i < len; ++i) {
+        printf("%02x", buf[i]);
+        if (i % 16 == 15)
+            printf("\n");
+        else
+            printf(" ");
+    }
+    printf("--- End Buffer ---\n");
+}
+
+err_t flash_write(tcp_client_state *state, bool flush) {
+    if (state->buffer_len == 0) return ERR_OK;
+
+    // Calculate number of extra bytes that don't align with page size
+    const size_t remainder = state->buffer_len % FLASH_PAGE_SIZE;
+    size_t flash_write_len;
+
+    if (flush) {
+        printf("Flushing buffer containing %d bytes\n", state->buffer_len);
+
+        // Write buffer contents WITH padding to align with page size
+        const size_t padding = FLASH_PAGE_SIZE - remainder;
+        flash_write_len = state->buffer_len + padding;
+    } else {
+        // Only write as much data that aligns with page size
+        flash_write_len = state->buffer_len - remainder;
+    }
+
+    // Check if not enough data to fit page boundary
+    if (flash_write_len < FLASH_PAGE_SIZE) return ERR_OK;
+
+    // Check if writing additional data will exceed target size
+    if (state->flash_len + flash_write_len >= flash_target_size) {
+        return tcp_client_finish(
+            state, ERR_MEM, "Response data is larger than target flash size");
+    }
+
+    printf("Writing %d bytes to flash memory\n", flash_write_len);
+
+    // uin32_t flash_offset = flash_target_offset + flash_len;
+    // flash_range_program(flash_offset, state->buffer, flash_write_len);
+
+    // TODO: Actually flash, for now, we're just printing to stdout what would
+    // get written
+    print_buf(state->buffer, flash_write_len);
+
+    // If data is left over in buffer, move it to beginning
+    if (!flush && remainder != 0) {
+        memmove(state->buffer, state->buffer + flash_write_len, remainder);
+    }
+
+    state->flash_len += flash_write_len;
+    state->buffer_len -= flush ? state->buffer_len : flash_write_len;
+
+    return ERR_OK;
+}
+
 /* TCP Callbacks */
 
 err_t tcp_client_connected(void *arg, struct tcp_pcb *tpcb, err_t err) {
@@ -157,6 +239,7 @@ err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 
     // A NULL pbuf indicates remote host has closed the connection
     if (p == NULL) {
+        flash_write(state, true);
         return tcp_client_finish(state, 0, "Connection closed");
     }
 
@@ -164,19 +247,22 @@ err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 
     cyw43_arch_lwip_check();
     if (p->tot_len > 0) {
-        // Receive the buffer
-        const u16_t buffer_left = buffer_size - state->buffer_len;
-        state->buffer_len += pbuf_copy_partial(
-            p, state->buffer + state->buffer_len,
-            p->tot_len > buffer_left ? buffer_left : p->tot_len, 0);
-        tcp_recved(tpcb, p->tot_len);
+        // Receive the buffer if it contains the response data (ignores headers)
+        if (state->recv_count > 1) {
+            const u16_t buffer_left = buffer_size - state->buffer_len;
+            state->buffer_len += pbuf_copy_partial(
+                p, state->buffer + state->buffer_len,
+                p->tot_len > buffer_left ? buffer_left : p->tot_len, 0);
+        }
 
-        printf("%.*s\n", state->buffer_len, state->buffer);
+        tcp_recved(tpcb, p->tot_len);
+        ("%.*s\n", state->buffer_len, state->buffer);
     }
 
     pbuf_free(p);
 
-    return ERR_OK;
+    // Write buffer contents to flash if needed
+    return flash_write(state, false); // TODO: Change to false!
 }
 
 void tcp_client_err(void *arg, err_t err) {
@@ -188,18 +274,17 @@ void tcp_client_err(void *arg, err_t err) {
 
 /* High-Level Logic */
 
-void print_image() {
-    // TODO: Print image to e-ink display
-}
+void print_image(size_t data_len) { print_buf(flash_target_data, data_len); }
 
-bool download_image() {
+// Returns the size of the image (stored in flash memory)
+size_t download_image() {
     tcp_client_state *state = tcp_client_init();
 
     // Open connection to server
     if (state == NULL || !tcp_client_open(state)) {
         tcp_client_finish(state, -1, "Failed to open TCP connection");
         delete state;
-        return false;
+        return -1;
     }
 
     // Wait until connected to server
@@ -213,7 +298,7 @@ bool download_image() {
     if (err != ERR_OK) {
         tcp_client_finish(state, -1, "Failed to send HTTP request");
         delete state;
-        return false;
+        return -1;
     }
 
     // Wait for response
@@ -222,19 +307,22 @@ bool download_image() {
         cyw43_arch_wait_for_work_until(make_timeout_time_ms(1000));
     }
 
+    size_t data_len = state->flash_len;
     delete state;
-    return true;
+
+    return data_len;
 }
 
 void update_image() {
     if (!wifi_connect()) return;
 
-    if (!download_image()) {
+    size_t data_len = download_image();
+    if (data_len <= 0) {
         printf("Failed to download image\n");
         return;
     }
 
-    // print_image();
+    print_image(data_len);
 
     // if (schedule) {
     // TODO: Schedule next update?
