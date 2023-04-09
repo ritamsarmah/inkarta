@@ -1,9 +1,9 @@
+#include "hardware/flash.h"
 #include "lwip/tcp.h"
 #include "pico/cyw43_arch.h"
 #include "pico/stdlib.h"
 #include "secret.hpp"
 
-#include <algorithm>
 #include <cstdio>
 #include <string>
 
@@ -18,8 +18,8 @@ void tcp_client_err(void *arg, err_t err);
 
 /* Globals */
 
-const u16_t width_px = 296;
-const u16_t height_px = 128;
+const u32_t width_px = 296;
+const u32_t height_px = 128;
 
 const u32_t country = CYW43_COUNTRY_USA;
 const u32_t auth = CYW43_AUTH_WPA2_AES_PSK;
@@ -27,20 +27,23 @@ const u32_t auth = CYW43_AUTH_WPA2_AES_PSK;
 const std::string host = "192.168.1.25"; // TODO: Change to rpi (5)
 const u16_t port = 5000;
 
-const std::string path =
-    "/image?w=" + std::to_string(width_px) + "&h=" + std::to_string(height_px);
+const std::string path = "/next";
+// const std::string path =
+//     "/image?w=" + std::to_string(width_px) + "&h=" +
+//     std::to_string(height_px);
 const std::string request = "GET " + path + " HTTP/1.1\r\n\
     Host: " + host + "\r\n\
     Connection: close\r\n\r\n";
 
 const u8_t poll_interval_s = 10;
-const u32_t buffer_size = 8 * 1024; // 8 KB (800x480 image -> 48KB)
+const u32_t buffer_size = 8 * 1024; // 8 KB
 
 // TCP connection state
 typedef struct tcp_client_state {
     struct tcp_pcb *tpcb;
     u8_t buffer[buffer_size];
     int buffer_len;
+    int recv_count;
     bool connected;
     bool completed;
 } tcp_client_state;
@@ -73,13 +76,24 @@ void wifi_disconnect() {
 
 /* TCP */
 
-bool tcp_client_open(tcp_client_state *state) {
+tcp_client_state *tcp_client_init() {
+    tcp_client_state *state = new tcp_client_state;
+
     state->tpcb = tcp_new();
     if (state->tpcb == NULL) {
         printf("Failed to create TCP PCB\n");
-        return false;
+        return NULL;
     }
 
+    state->buffer_len = 0;
+    state->recv_count = 0;
+    state->connected = false;
+    state->completed = false;
+
+    return state;
+}
+
+bool tcp_client_open(tcp_client_state *state) {
     tcp_arg(state->tpcb, state);
     tcp_recv(state->tpcb, tcp_client_recv);
     tcp_err(state->tpcb, tcp_client_err);
@@ -146,10 +160,10 @@ err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
         return tcp_client_finish(state, 0, "Connection closed");
     }
 
+    state->recv_count++;
+
     cyw43_arch_lwip_check();
     if (p->tot_len > 0) {
-        printf("recv %d err %d\n", p->tot_len, err);
-
         // Receive the buffer
         const u16_t buffer_left = buffer_size - state->buffer_len;
         state->buffer_len += pbuf_copy_partial(
@@ -157,8 +171,7 @@ err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
             p->tot_len > buffer_left ? buffer_left : p->tot_len, 0);
         tcp_recved(tpcb, p->tot_len);
 
-        // TODO: Parse buffer for image data
-        printf("%s\n", state->buffer);
+        printf("%.*s\n", state->buffer_len, state->buffer);
     }
 
     pbuf_free(p);
@@ -180,9 +193,10 @@ void print_image() {
 }
 
 bool download_image() {
+    tcp_client_state *state = tcp_client_init();
+
     // Open connection to server
-    tcp_client_state *state = new tcp_client_state();
-    if (!tcp_client_open(state)) {
+    if (state == NULL || !tcp_client_open(state)) {
         tcp_client_finish(state, -1, "Failed to open TCP connection");
         delete state;
         return false;
@@ -220,7 +234,7 @@ void update_image() {
         return;
     }
 
-    print_image();
+    // print_image();
 
     // if (schedule) {
     // TODO: Schedule next update?

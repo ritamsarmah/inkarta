@@ -2,7 +2,7 @@
 images/
 db.json
 
-secrets.hpp
+secret.hpp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
