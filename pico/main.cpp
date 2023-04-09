@@ -29,25 +29,23 @@ const u8_t poll_interval_s = 10;
 const std::string host = "192.168.1.25"; // TODO: Change to rpi (5)
 const u16_t port = 5000;
 
-const std::string path = "/next";
-// const std::string path =
-//     "/image?w=" + std::to_string(width_px) + "&h=" +
-//     std::to_string(height_px);
+const std::string path =
+    "/image?w=" + std::to_string(width_px) + "&h=" + std::to_string(height_px);
 const std::string request = "GET " + path + " HTTP/1.1\r\n\
     Host: " + host + "\r\n\
     Connection: close\r\n\r\n";
 
 // Data
-const u32_t buffer_size = FLASH_PAGE_SIZE * 4; // 1 KB
+const u32_t buffer_size = FLASH_PAGE_SIZE * 16; // 4 KB
 
 /**
- * Use region of 64KB from end of flash for storing image.
- * This is to avoid overwriting program written from front of flash.
+ * Use region of 64KB from end of flash memory for storing image.
+ * This is to avoid overwriting code written at the front of flash.
  *
  * NOTE: Whole number of sectors must be erased at a time, hence the
  * target size being specified with FLASH_SECTOR_SIZE for ease of use.
  */
-const size_t flash_target_size = FLASH_SECTOR_SIZE; // 4 KB (TODO: 16 for 64 KB)
+const size_t flash_target_size = FLASH_SECTOR_SIZE * 16; // 64 KB
 const u32_t flash_target_offset = PICO_FLASH_SIZE_BYTES - flash_target_size;
 const u8_t *flash_target_data = (const u8_t *)(XIP_BASE + flash_target_offset);
 
@@ -106,9 +104,9 @@ tcp_client_state *tcp_client_init() {
     state->completed = false;
 
     // Prepare flash target region for storing image data
-    // uint32_t ints = save_and_disable_interrupts();
-    // flash_range_erase(flash_target_offset, flash_target_size);
-    // restore_interrupts(ints);
+    uint32_t ints = save_and_disable_interrupts();
+    flash_range_erase(flash_target_offset, flash_target_size);
+    restore_interrupts(ints);
 
     return state;
 }
@@ -159,9 +157,8 @@ err_t tcp_client_finish(tcp_client_state *state, int status,
 
 /* Flash */
 
-// TODO: delete
-void print_buf(const u8_t *buf, size_t len) {
-    printf("--- Start Buffer ---\n");
+void print_buffer(const u8_t *buf, size_t len) {
+    printf("\n--- Start Buffer ---\n");
     for (size_t i = 0; i < len; ++i) {
         printf("%02x", buf[i]);
         if (i % 16 == 15)
@@ -169,7 +166,7 @@ void print_buf(const u8_t *buf, size_t len) {
         else
             printf(" ");
     }
-    printf("--- End Buffer ---\n");
+    printf("\n--- End Buffer ---\n");
 }
 
 err_t flash_write(tcp_client_state *state, bool flush) {
@@ -180,14 +177,18 @@ err_t flash_write(tcp_client_state *state, bool flush) {
     size_t flash_write_len;
 
     if (flush) {
-        printf("Flushing buffer containing %d bytes\n", state->buffer_len);
-
         // Write buffer contents WITH padding to align with page size
         const size_t padding = FLASH_PAGE_SIZE - remainder;
         flash_write_len = state->buffer_len + padding;
+
+        printf("[Flush] Writing %d bytes to flash memory (padded %d bytes) \n",
+               state->buffer_len, padding);
+
     } else {
         // Only write as much data that aligns with page size
         flash_write_len = state->buffer_len - remainder;
+
+        printf("[Partial] Writing %d bytes to flash memory\n", flash_write_len);
     }
 
     // Check if not enough data to fit page boundary
@@ -199,22 +200,23 @@ err_t flash_write(tcp_client_state *state, bool flush) {
             state, ERR_MEM, "Response data is larger than target flash size");
     }
 
-    printf("Writing %d bytes to flash memory\n", flash_write_len);
+    u32_t flash_offset = flash_target_offset + state->flash_len;
 
-    // uin32_t flash_offset = flash_target_offset + flash_len;
-    // flash_range_program(flash_offset, state->buffer, flash_write_len);
-
-    // TODO: Actually flash, for now, we're just printing to stdout what would
-    // get written
-    print_buf(state->buffer, flash_write_len);
+    // Program flash
+    uint32_t ints = save_and_disable_interrupts();
+    flash_range_program(flash_offset, state->buffer, flash_write_len);
+    restore_interrupts(ints);
 
     // If data is left over in buffer, move it to beginning
     if (!flush && remainder != 0) {
         memmove(state->buffer, state->buffer + flash_write_len, remainder);
     }
 
-    state->flash_len += flash_write_len;
-    state->buffer_len -= flush ? state->buffer_len : flash_write_len;
+    // NOTE: After flushing the buffer, the flash_len reflects the true length
+    // of data, i.e., not including any padding to align to page size
+    const size_t delta_len = flush ? state->buffer_len : flash_write_len;
+    state->flash_len += delta_len;
+    state->buffer_len -= delta_len;
 
     return ERR_OK;
 }
@@ -262,7 +264,7 @@ err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
     pbuf_free(p);
 
     // Write buffer contents to flash if needed
-    return flash_write(state, false); // TODO: Change to false!
+    return flash_write(state, false);
 }
 
 void tcp_client_err(void *arg, err_t err) {
@@ -274,7 +276,10 @@ void tcp_client_err(void *arg, err_t err) {
 
 /* High-Level Logic */
 
-void print_image(size_t data_len) { print_buf(flash_target_data, data_len); }
+void print_image(size_t data_len) {
+    printf("Printing image (%d bytes)...\n", data_len);
+    print_buffer(flash_target_data, data_len);
+}
 
 // Returns the size of the image (stored in flash memory)
 size_t download_image() {
