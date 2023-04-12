@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <string>
 
+using std::string;
+
 // Pico W Specs: 264 KB SRAM, 16 kB on-chip cache, 2MB of Flash Memory
 
 /* Forward Declarations */
@@ -26,12 +28,12 @@ const u32_t country = CYW43_COUNTRY_USA;
 const u32_t auth = CYW43_AUTH_WPA2_AES_PSK;
 const u8_t poll_interval_s = 10;
 
-const std::string host = "192.168.1.25"; // TODO: Change to rpi (5)
+const string host = "192.168.1.5";
 const u16_t port = 5000;
 
-const std::string path =
+const string path =
     "/image?w=" + std::to_string(width_px) + "&h=" + std::to_string(height_px);
-const std::string request = "GET " + path + " HTTP/1.1\r\n\
+const string request = "GET " + path + " HTTP/1.1\r\n\
     Host: " + host + "\r\n\
     Connection: close\r\n\r\n";
 
@@ -49,7 +51,6 @@ const size_t flash_target_size = FLASH_SECTOR_SIZE * 16; // 64 KB
 const u32_t flash_target_offset = PICO_FLASH_SIZE_BYTES - flash_target_size;
 const u8_t *flash_target_data = (const u8_t *)(XIP_BASE + flash_target_offset);
 
-// TCP connection state
 typedef struct tcp_client_state {
     struct tcp_pcb *tpcb;
     u8_t buffer[buffer_size];
@@ -144,8 +145,7 @@ err_t tcp_client_close(tcp_client_state *state) {
     return err;
 }
 
-err_t tcp_client_finish(tcp_client_state *state, int status,
-                        std::string message) {
+err_t tcp_client_finish(tcp_client_state *state, int status, string message) {
     printf("%s (%d)\n", message.c_str(), status);
 
     state->completed = true;
@@ -274,11 +274,12 @@ void tcp_client_err(void *arg, err_t err) {
     }
 }
 
-/* High-Level Logic */
+/* Image Logic */
 
 void print_image(size_t data_len) {
     printf("Printing image (%d bytes)...\n", data_len);
-    print_buffer(flash_target_data, data_len);
+
+    // Start from offset of bitmap data to get pixels
 }
 
 // Returns the size of the image (stored in flash memory)
@@ -328,15 +329,8 @@ void update_image() {
     }
 
     print_image(data_len);
-
-    // if (schedule) {
-    // TODO: Schedule next update?
-    // }
-
     wifi_disconnect();
 }
-
-/* Display */
 
 void schedule_update_image() {
     // TODO: get current time and schedule at midnight
@@ -345,9 +339,7 @@ void schedule_update_image() {
 int main() {
     stdio_init_all();
 
-    sleep_ms(2000); // TODO: remove after debug
-
-    // TODO: Button should force trigger new fetch
+    // TODO: Button should trigger new fetch
     // TODO: check if the connected = true, if it's true then update already
     // happening so don't redo!
 
