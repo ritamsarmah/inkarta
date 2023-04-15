@@ -23,6 +23,7 @@ void tcp_client_err(void *arg, err_t err);
 
 const u32_t width_px = 296;
 const u32_t height_px = 128;
+const u32_t bits_per_px = 1;
 
 const u32_t country = CYW43_COUNTRY_USA;
 const u32_t auth = CYW43_AUTH_WPA2_AES_PSK;
@@ -277,9 +278,29 @@ void tcp_client_err(void *arg, err_t err) {
 /* Image Logic */
 
 void print_image(size_t data_len) {
-    printf("Printing image (%d bytes)...\n", data_len);
+    printf("Printing image of size %d x %d (%d bytes)...\n", width_px, height_px,
+           data_len);
 
-    // Start from offset of bitmap data to get pixels
+    // Calculate the number of bytes per row, taking into account row padding
+    int32_t bytes_per_row = (width_px + 7) / 8;             // 1 bit per pixel
+    int32_t row_padding = (4 - (bytes_per_row % 4)) % 4; // Row padding in bytes
+    bytes_per_row += row_padding;
+
+    uint32_t bmp_offset = flash_target_data[10];
+    for (int32_t y = height_px - 1; y >= 0; y--) {
+        for (int32_t x = 0; x < width_px; x++) {
+            // Calculate the offset to the current pixel
+            uint32_t px_offset =
+                (y * bytes_per_row) + (x / 8); // Each byte represents 8 pixels
+
+            uint8_t color_bit =
+                (flash_target_data[bmp_offset + px_offset] >> (7 - (x % 8))) & 0x01;
+
+            // Convert the color bit to black (0) or white (1)
+            printf("%s", color_bit == 0 ? " " : "█");
+        }
+        printf("\n");
+    }
 }
 
 // Returns the size of the image (stored in flash memory)
