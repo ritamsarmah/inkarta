@@ -5,19 +5,16 @@
 #include "pico/stdlib.h"
 #include "secret.hpp"
 
+// Pimoroni
+#include "drivers/button/button.hpp"
+#include "drivers/uc8151/uc8151.hpp"
+#include "libraries/pico_graphics/pico_graphics.hpp"
+
 #include <cstdio>
 #include <string>
 
 using std::string;
-
-// Pico W Specs: 264 KB SRAM, 16 kB on-chip cache, 2MB of Flash Memory
-
-/* Forward Declarations */
-
-err_t tcp_client_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
-err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
-                      err_t err);
-void tcp_client_err(void *arg, err_t err);
+using namespace pimoroni;
 
 /* Globals */
 
@@ -38,7 +35,6 @@ const string request = "GET " + path + " HTTP/1.1\r\n\
     Host: " + host + "\r\n\
     Connection: close\r\n\r\n";
 
-// Data
 const u32_t buffer_size = FLASH_PAGE_SIZE * 16; // 4 KB
 
 /**
@@ -51,6 +47,22 @@ const u32_t buffer_size = FLASH_PAGE_SIZE * 16; // 4 KB
 const size_t flash_target_size = FLASH_SECTOR_SIZE * 16; // 64 KB
 const u32_t flash_target_offset = PICO_FLASH_SIZE_BYTES - flash_target_size;
 const u8_t *flash_target_data = (const u8_t *)(XIP_BASE + flash_target_offset);
+
+/* Pimoroni */
+
+// TODO: For larger image sizes that don't fit in RAM, might need to have the frame buffer pointing to flash
+UC8151 uc8151(width_px, height_px, ROTATE_0);
+PicoGraphics_Pen1BitY graphics(uc8151.width, uc8151.height, nullptr);
+
+const u8_t pen_black = 0;
+const u8_t pen_white = 15;
+
+/* Declarations */
+
+err_t tcp_client_connected(void *arg, struct tcp_pcb *tpcb, err_t err);
+err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
+                      err_t err);
+void tcp_client_err(void *arg, err_t err);
 
 typedef struct tcp_client_state {
     struct tcp_pcb *tpcb;
@@ -106,7 +118,7 @@ tcp_client_state *tcp_client_init() {
     state->completed = false;
 
     // Prepare flash target region for storing image data
-    uint32_t ints = save_and_disable_interrupts();
+    u32_t ints = save_and_disable_interrupts();
     flash_range_erase(flash_target_offset, flash_target_size);
     restore_interrupts(ints);
 
@@ -204,7 +216,7 @@ err_t flash_write(tcp_client_state *state, bool flush) {
     u32_t flash_offset = flash_target_offset + state->flash_len;
 
     // Program flash
-    uint32_t ints = save_and_disable_interrupts();
+    u32_t ints = save_and_disable_interrupts();
     flash_range_program(flash_offset, state->buffer, flash_write_len);
     restore_interrupts(ints);
 
@@ -277,30 +289,41 @@ void tcp_client_err(void *arg, err_t err) {
 
 /* Image Logic */
 
-void print_image(size_t data_len) {
-    printf("Printing image of size %d x %d (%d bytes)...\n", width_px, height_px,
-           data_len);
+void print_image() {
+    printf("Printing image of size %d x %d...\n", width_px, height_px);
+
+    // Clear screen
+    graphics.set_pen(pen_black);
+    graphics.clear();
 
     // Calculate the number of bytes per row, taking into account row padding
-    int32_t bytes_per_row = (width_px + 7) / 8;             // 1 bit per pixel
+    int32_t bytes_per_row = (width_px + 7) / 8;          // 1 bit per pixel
     int32_t row_padding = (4 - (bytes_per_row % 4)) % 4; // Row padding in bytes
     bytes_per_row += row_padding;
 
-    uint32_t bmp_offset = flash_target_data[10];
-    for (int32_t y = height_px - 1; y >= 0; y--) {
+    u32_t bmp_offset = flash_target_data[10];
+    for (int32_t y = 0; y < height_px; y++) {
         for (int32_t x = 0; x < width_px; x++) {
             // Calculate the offset to the current pixel
-            uint32_t px_offset =
+            u32_t px_offset =
                 (y * bytes_per_row) + (x / 8); // Each byte represents 8 pixels
 
-            uint8_t color_bit =
-                (flash_target_data[bmp_offset + px_offset] >> (7 - (x % 8))) & 0x01;
+            u8_t color_bit =
+                (flash_target_data[bmp_offset + px_offset] >> (7 - (x % 8))) &
+                0x01;
 
-            // Convert the color bit to black (0) or white (1)
-            printf("%s", color_bit == 0 ? " " : "█");
+            // Update the pixel color
+            const u8_t pen_color = color_bit == 0 ? pen_black : pen_white;
+            graphics.set_pen(pen_color);
+
+            // Bitmap pixels are stored bottom up, so we'll need to convert to
+            // correct pixel position when drawing
+            Point p(x, height_px - y - 1);
+            graphics.pixel(p);
         }
-        printf("\n");
     }
+
+    uc8151.update(&graphics);
 }
 
 // Returns the size of the image (stored in flash memory)
@@ -349,7 +372,7 @@ void update_image() {
         return;
     }
 
-    print_image(data_len);
+    print_image();
     wifi_disconnect();
 }
 
@@ -363,6 +386,8 @@ int main() {
     // TODO: Button should trigger new fetch
     // TODO: check if the connected = true, if it's true then update already
     // happening so don't redo!
+    // Deep sleep: https://ghubcoder.github.io/posts/awaking-the-pico/
+    // TODO: Add low battery detection
 
     update_image();
 

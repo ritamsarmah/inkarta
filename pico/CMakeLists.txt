@@ -4,6 +4,7 @@ set(NAME picosso)
 set(ENV{PICO_SDK_PATH} "../../pico-sdk/")
 set(CMAKE_BUILD_TYPE Release)
 
+include(pimoroni_pico_import.cmake)
 include(pico_sdk_import.cmake)
 
 project(${NAME} C CXX ASM)
@@ -18,6 +19,13 @@ add_executable(${NAME}
     main.cpp
 )
 
+# Include required libraries
+include(../pimoroni-pico/common/pimoroni_i2c)
+include(../pimoroni-pico/common/pimoroni_bus)
+include(../pimoroni-pico/drivers/button/button)
+include(../pimoroni-pico/drivers/uc8151/uc8151)
+include(../pimoroni-pico/libraries/pico_graphics/pico_graphics)
+
 target_compile_options(${NAME} PRIVATE -Os)
 
 target_include_directories(${NAME} PRIVATE ${CMAKE_CURRENT_LIST_DIR})
@@ -28,6 +36,8 @@ target_link_libraries(${NAME}
     pico_stdlib
     pico_cyw43_arch_lwip_threadsafe_background
     hardware_flash
+    # Pimoroni Inky Pack Necessary Libraries
+    hardware_spi hardware_pwm hardware_dma button uc8151 pico_graphics
 )
 
 # Enable usb output, disable uart output
