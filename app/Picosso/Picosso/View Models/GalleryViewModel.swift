@@ -11,6 +11,7 @@ import SwiftUI
 class GalleryViewModel: ObservableObject {
     
     @Published var artworks: [Artwork]?
+    @Published var nextId: String?
     
     @Published var isLoading = false
     @Published var isShowingFileImporter = false
@@ -40,6 +41,7 @@ class GalleryViewModel: ObservableObject {
                 
                 let db = try JSONDecoder().decode(FetchResponse.self, from: data)
                 self.artworks = Array(db.artworks.values).sorted(by: { $0.title < $1.title })
+                self.nextId = db.next
             }
         } catch let error {
             await MainActor.run {

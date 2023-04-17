@@ -21,7 +21,8 @@ struct GalleryView: View {
                     List {
                         ForEach(artworks) { artwork in
                             NavigationLink {
-                                DetailView(viewModel: .init(artwork: artwork))
+                                DetailView(viewModel: .init(artwork: artwork, parentViewModel: viewModel)
+                                )
                             } label: {
                                 HStack {
                                     VStack(alignment: .leading, spacing: 4) {

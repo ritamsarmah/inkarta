@@ -45,12 +45,17 @@ struct DetailView: View {
         .toolbar {
             ToolbarItem {
                 Button {
-                    UIPasteboard.general.setValue(viewModel.artwork.id, forPasteboardType: UTType.plainText.identifier)
+                    Task {
+                        await viewModel.setNextId()
+                    }
                 } label: {
-                    Image(systemName: "doc.on.doc")
+                    Image(systemName: viewModel.isNext ? "checkmark.circle.fill" : "checkmark.circle")
                 }
+                .disabled(viewModel.isNext)
             }
         }
+        .errorAlert(info: viewModel.errorInfo)
+        .environment(\.colorScheme, viewModel.artwork.dark ? .dark : .light)
     }
 }
 
