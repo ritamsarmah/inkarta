@@ -50,7 +50,8 @@ const u8_t *flash_target_data = (const u8_t *)(XIP_BASE + flash_target_offset);
 
 /* Pimoroni */
 
-// TODO: For larger image sizes that don't fit in RAM, might need to have the frame buffer pointing to flash
+// TODO: For larger image sizes that don't fit in RAM, might need to have the
+// frame buffer pointing to flash
 UC8151 uc8151(width_px, height_px, ROTATE_0);
 PicoGraphics_Pen1BitY graphics(uc8151.width, uc8151.height, nullptr);
 
