@@ -1,6 +1,6 @@
 //
 //  Artwork.swift
-//  Picosso
+//  Inkasso
 //
 //  Created by Ritam Sarmah on 3/23/23.
 //
