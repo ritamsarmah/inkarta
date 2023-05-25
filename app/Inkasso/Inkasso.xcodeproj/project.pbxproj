@@ -20,7 +20,6 @@
 		357E96E629FC3BC400D75430 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D729FC3BC400D75430 /* DetailView.swift */; };
 		357E96E729FC3BC400D75430 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D829FC3BC400D75430 /* UploadView.swift */; };
 		357E96E829FC3BC400D75430 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D929FC3BC400D75430 /* GalleryView.swift */; };
-		357E96E929FC3BC400D75430 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 357E96DA29FC3BC400D75430 /* Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -181,7 +180,6 @@
 			files = (
 				357E96E329FC3BC400D75430 /* Preview Assets.xcassets in Resources */,
 				357E96DF29FC3BC400D75430 /* Assets.xcassets in Resources */,
-				357E96E929FC3BC400D75430 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
