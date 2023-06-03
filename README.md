@@ -1,4 +1,4 @@
-# Picosso
+# Inkasso
 
 An e-ink picture frame using the Inkplate 10.
 
@@ -28,7 +28,6 @@ python3 pyboard.py --device /dev/tty.usbserial-110 "Examples/Soldered_Inkplate10
 ```
 python3 pyboard.py --device /dev/tty.usbserial-110 "main.py"
 ```
-
 
 ## Reference
 
