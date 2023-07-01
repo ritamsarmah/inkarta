@@ -7,10 +7,10 @@ from secrets import ssid, password
 display = Inkplate(Inkplate.INKPLATE_1BIT)
 
 # 1200 x 825 BMP is 125KB
-# width = display.width()
-# height = display.height()
-width = 100
-height = 100
+width = display.width()
+height = display.height()
+# width = 256
+# height = 256
 
 host = "192.168.1.5"
 port = 5000
@@ -54,10 +54,9 @@ def download_artwork():
     return data
 
 
-# NOTE: Parsing and displaying a large image will take a few minutes
-# TODO: Consider optimizations for this
+# NOTE: Parsing and displaying full image can take up to 5 minutes
 def print_artwork(bmp):
-    print("Parsing artwork")
+    print("Parsing bitmap")
 
     # Calculate the number of bytes per row, taking into account row padding
     bytes_per_row = (width + 7) // 8  # 1 bit per pixel
@@ -65,15 +64,18 @@ def print_artwork(bmp):
     bytes_per_row += row_padding
 
     bmp_offset = bmp[10]
-    for y in range(0, height):
-        for x in range(0, width):
-            # Calculate the offset to the current pixel
-            # Each byte represents 8 pixels
-            px_offset = (y * bytes_per_row) + (x // 8)
-            color_bit = (bmp[bmp_offset + px_offset] >> (7 - (x % 8))) & 0x01
+    for y in range(height):
+        row_start = y * bytes_per_row
 
-            color = display.BLACK if color_bit == 0 else display.WHITE
-            display.drawPixel(x, height - y - 1, color)
+        for offset, x in enumerate(range(0, width, 8)):
+            # Get next byte in row (which holds 8 pixels)
+            byte = bmp[bmp_offset + row_start + offset]
+
+            # Draw each pixel bit from the byte
+            for i, bit in enumerate(range(7, -1, -1)):
+                color_bit = (byte >> bit) & 0x01
+                color = display.BLACK if color_bit == 0 else display.WHITE
+                display.drawPixel(x + i, height - y - 1, color)
 
     # Update screen
     print("Displaying artwork")
@@ -85,6 +87,7 @@ if __name__ == "__main__":
     display.setRotation(3)
 
     connect_wifi()
+
     bmp = download_artwork()
     print_artwork(bmp)
 
