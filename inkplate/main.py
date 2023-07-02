@@ -1,3 +1,5 @@
+import machine
+import network
 import socket
 import time
 
@@ -7,20 +9,21 @@ from secrets import ssid, password
 display = Inkplate(Inkplate.INKPLATE_1BIT)
 
 # 1200 x 825 BMP is 125KB
-width = display.width()
-height = display.height()
-# width = 256
-# height = 256
+# width = display.height()
+# height = display.width()
+width = 64
+height = 64
 
 host = "192.168.1.5"
 port = 5000
 path = f"/image?w={width}&h={height}"
 request = f"GET {path} HTTP/1.1\r\nHost: {host}\r\nConnection: close\r\n\r\n"
 
+# sleep_time_us = 8.64e+10
+sleep_time_us = 1e+7
+
 
 def connect_wifi():
-    import network
-
     sta_if = network.WLAN(network.STA_IF)
     if not sta_if.isconnected():
         print(f"Connecting to \"{ssid}\"")
@@ -30,6 +33,12 @@ def connect_wifi():
             pass
 
     print(f"Connected to \"{ssid}\"")
+
+
+def disconnect_wifi():
+    sta_if = network.WLAN(network.STA_IF)
+    sta_if.disconnect()
+    print(f"Disconnected from \"{ssid}\"")
 
 
 def download_artwork():
@@ -86,10 +95,13 @@ if __name__ == "__main__":
     display.begin()
     display.setRotation(3)
 
-    connect_wifi()
+    while True:
+        connect_wifi()
 
-    bmp = download_artwork()
-    print_artwork(bmp)
+        bmp = download_artwork()
+        print_artwork(bmp)
 
-    # TODO: Add support for refreshing with button
-    # Set schedule
+        disconnect_wifi()
+
+        print("Sleeping...")
+        machine.deepsleep(sleep_time_us)
