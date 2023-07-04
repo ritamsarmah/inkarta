@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "35A1645A29CAC0A400FD2680"
-               BuildableName = "Inkasso.app"
-               BlueprintName = "Inkasso"
-               ReferencedContainer = "container:Inkasso.xcodeproj">
+               BuildableName = "Inkarta.app"
+               BlueprintName = "Inkarta"
+               ReferencedContainer = "container:Inkarta.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -45,9 +45,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "35A1645A29CAC0A400FD2680"
-            BuildableName = "Inkasso.app"
-            BlueprintName = "Inkasso"
-            ReferencedContainer = "container:Inkasso.xcodeproj">
+            BuildableName = "Inkarta.app"
+            BlueprintName = "Inkarta"
+            ReferencedContainer = "container:Inkarta.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -62,9 +62,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "35A1645A29CAC0A400FD2680"
-            BuildableName = "Inkasso.app"
-            BlueprintName = "Inkasso"
-            ReferencedContainer = "container:Inkasso.xcodeproj">
+            BuildableName = "Inkarta.app"
+            BlueprintName = "Inkarta"
+            ReferencedContainer = "container:Inkarta.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -1,6 +1,6 @@
 //
 //  Utils.swift
-//  Inkasso
+//  Inkarta
 //
 //  Created by Ritam Sarmah on 3/25/23.
 //

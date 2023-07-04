@@ -7,37 +7,38 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		357E96DB29FC3BC400D75430 /* GalleryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96C929FC3BC400D75430 /* GalleryViewModel.swift */; };
-		357E96DC29FC3BC400D75430 /* UploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96CA29FC3BC400D75430 /* UploadViewModel.swift */; };
-		357E96DD29FC3BC400D75430 /* DetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96CB29FC3BC400D75430 /* DetailViewModel.swift */; };
-		357E96DE29FC3BC400D75430 /* InkassoApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96CC29FC3BC400D75430 /* InkassoApp.swift */; };
-		357E96DF29FC3BC400D75430 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 357E96CD29FC3BC400D75430 /* Assets.xcassets */; };
-		357E96E029FC3BC400D75430 /* Artwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96CF29FC3BC400D75430 /* Artwork.swift */; };
-		357E96E129FC3BC400D75430 /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D029FC3BC400D75430 /* ErrorAlert.swift */; };
-		357E96E229FC3BC400D75430 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D129FC3BC400D75430 /* Endpoint.swift */; };
-		357E96E329FC3BC400D75430 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 357E96D329FC3BC400D75430 /* Preview Assets.xcassets */; };
-		357E96E429FC3BC400D75430 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D429FC3BC400D75430 /* Utils.swift */; };
-		357E96E629FC3BC400D75430 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D729FC3BC400D75430 /* DetailView.swift */; };
-		357E96E729FC3BC400D75430 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D829FC3BC400D75430 /* UploadView.swift */; };
-		357E96E829FC3BC400D75430 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 357E96D929FC3BC400D75430 /* GalleryView.swift */; };
+		3548A4CB2A54C16F00AFD8C7 /* GalleryViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4BA2A54C16F00AFD8C7 /* GalleryViewModel.swift */; };
+		3548A4CC2A54C16F00AFD8C7 /* UploadViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4BB2A54C16F00AFD8C7 /* UploadViewModel.swift */; };
+		3548A4CD2A54C16F00AFD8C7 /* DetailViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4BC2A54C16F00AFD8C7 /* DetailViewModel.swift */; };
+		3548A4CE2A54C16F00AFD8C7 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3548A4BD2A54C16F00AFD8C7 /* Assets.xcassets */; };
+		3548A4CF2A54C16F00AFD8C7 /* Artwork.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4BF2A54C16F00AFD8C7 /* Artwork.swift */; };
+		3548A4D02A54C16F00AFD8C7 /* ErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C02A54C16F00AFD8C7 /* ErrorAlert.swift */; };
+		3548A4D12A54C16F00AFD8C7 /* Endpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C12A54C16F00AFD8C7 /* Endpoint.swift */; };
+		3548A4D22A54C16F00AFD8C7 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3548A4C32A54C16F00AFD8C7 /* Preview Assets.xcassets */; };
+		3548A4D32A54C16F00AFD8C7 /* InkartaApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C42A54C16F00AFD8C7 /* InkartaApp.swift */; };
+		3548A4D42A54C16F00AFD8C7 /* Utils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C52A54C16F00AFD8C7 /* Utils.swift */; };
+		3548A4D52A54C16F00AFD8C7 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C72A54C16F00AFD8C7 /* DetailView.swift */; };
+		3548A4D62A54C16F00AFD8C7 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C82A54C16F00AFD8C7 /* UploadView.swift */; };
+		3548A4D72A54C16F00AFD8C7 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C92A54C16F00AFD8C7 /* GalleryView.swift */; };
+		3548A4D82A54C16F00AFD8C7 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3548A4CA2A54C16F00AFD8C7 /* Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		357E96C929FC3BC400D75430 /* GalleryViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GalleryViewModel.swift; sourceTree = "<group>"; };
-		357E96CA29FC3BC400D75430 /* UploadViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UploadViewModel.swift; sourceTree = "<group>"; };
-		357E96CB29FC3BC400D75430 /* DetailViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailViewModel.swift; sourceTree = "<group>"; };
-		357E96CC29FC3BC400D75430 /* InkassoApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InkassoApp.swift; sourceTree = "<group>"; };
-		357E96CD29FC3BC400D75430 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		357E96CF29FC3BC400D75430 /* Artwork.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Artwork.swift; sourceTree = "<group>"; };
-		357E96D029FC3BC400D75430 /* ErrorAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
-		357E96D129FC3BC400D75430 /* Endpoint.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Endpoint.swift; sourceTree = "<group>"; };
-		357E96D329FC3BC400D75430 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
-		357E96D429FC3BC400D75430 /* Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
-		357E96D729FC3BC400D75430 /* DetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
-		357E96D829FC3BC400D75430 /* UploadView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UploadView.swift; sourceTree = "<group>"; };
-		357E96D929FC3BC400D75430 /* GalleryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
-		357E96DA29FC3BC400D75430 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
-		35A1645B29CAC0A400FD2680 /* Inkasso.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Inkasso.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		3548A4BA2A54C16F00AFD8C7 /* GalleryViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GalleryViewModel.swift; sourceTree = "<group>"; };
+		3548A4BB2A54C16F00AFD8C7 /* UploadViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UploadViewModel.swift; sourceTree = "<group>"; };
+		3548A4BC2A54C16F00AFD8C7 /* DetailViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailViewModel.swift; sourceTree = "<group>"; };
+		3548A4BD2A54C16F00AFD8C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3548A4BF2A54C16F00AFD8C7 /* Artwork.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Artwork.swift; sourceTree = "<group>"; };
+		3548A4C02A54C16F00AFD8C7 /* ErrorAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ErrorAlert.swift; sourceTree = "<group>"; };
+		3548A4C12A54C16F00AFD8C7 /* Endpoint.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Endpoint.swift; sourceTree = "<group>"; };
+		3548A4C32A54C16F00AFD8C7 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		3548A4C42A54C16F00AFD8C7 /* InkartaApp.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = InkartaApp.swift; sourceTree = "<group>"; };
+		3548A4C52A54C16F00AFD8C7 /* Utils.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Utils.swift; sourceTree = "<group>"; };
+		3548A4C72A54C16F00AFD8C7 /* DetailView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DetailView.swift; sourceTree = "<group>"; };
+		3548A4C82A54C16F00AFD8C7 /* UploadView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = UploadView.swift; sourceTree = "<group>"; };
+		3548A4C92A54C16F00AFD8C7 /* GalleryView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GalleryView.swift; sourceTree = "<group>"; };
+		3548A4CA2A54C16F00AFD8C7 /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		35A1645B29CAC0A400FD2680 /* Inkarta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Inkarta.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,55 +52,55 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		357E96C729FC3BC400D75430 /* Inkasso */ = {
+		3548A4B82A54C16F00AFD8C7 /* Inkarta */ = {
 			isa = PBXGroup;
 			children = (
-				357E96CE29FC3BC400D75430 /* Models */,
-				357E96C829FC3BC400D75430 /* View Models */,
-				357E96D629FC3BC400D75430 /* Views */,
-				357E96CC29FC3BC400D75430 /* InkassoApp.swift */,
-				357E96D429FC3BC400D75430 /* Utils.swift */,
-				357E96CD29FC3BC400D75430 /* Assets.xcassets */,
-				357E96DA29FC3BC400D75430 /* Info.plist */,
-				357E96D229FC3BC400D75430 /* Preview Content */,
+				3548A4B92A54C16F00AFD8C7 /* View Models */,
+				3548A4BD2A54C16F00AFD8C7 /* Assets.xcassets */,
+				3548A4BE2A54C16F00AFD8C7 /* Models */,
+				3548A4C22A54C16F00AFD8C7 /* Preview Content */,
+				3548A4C42A54C16F00AFD8C7 /* InkartaApp.swift */,
+				3548A4C52A54C16F00AFD8C7 /* Utils.swift */,
+				3548A4C62A54C16F00AFD8C7 /* Views */,
+				3548A4CA2A54C16F00AFD8C7 /* Info.plist */,
 			);
-			path = Inkasso;
+			path = Inkarta;
 			sourceTree = "<group>";
 		};
-		357E96C829FC3BC400D75430 /* View Models */ = {
+		3548A4B92A54C16F00AFD8C7 /* View Models */ = {
 			isa = PBXGroup;
 			children = (
-				357E96C929FC3BC400D75430 /* GalleryViewModel.swift */,
-				357E96CA29FC3BC400D75430 /* UploadViewModel.swift */,
-				357E96CB29FC3BC400D75430 /* DetailViewModel.swift */,
+				3548A4BA2A54C16F00AFD8C7 /* GalleryViewModel.swift */,
+				3548A4BB2A54C16F00AFD8C7 /* UploadViewModel.swift */,
+				3548A4BC2A54C16F00AFD8C7 /* DetailViewModel.swift */,
 			);
 			path = "View Models";
 			sourceTree = "<group>";
 		};
-		357E96CE29FC3BC400D75430 /* Models */ = {
+		3548A4BE2A54C16F00AFD8C7 /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				357E96CF29FC3BC400D75430 /* Artwork.swift */,
-				357E96D029FC3BC400D75430 /* ErrorAlert.swift */,
-				357E96D129FC3BC400D75430 /* Endpoint.swift */,
+				3548A4BF2A54C16F00AFD8C7 /* Artwork.swift */,
+				3548A4C02A54C16F00AFD8C7 /* ErrorAlert.swift */,
+				3548A4C12A54C16F00AFD8C7 /* Endpoint.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
 		};
-		357E96D229FC3BC400D75430 /* Preview Content */ = {
+		3548A4C22A54C16F00AFD8C7 /* Preview Content */ = {
 			isa = PBXGroup;
 			children = (
-				357E96D329FC3BC400D75430 /* Preview Assets.xcassets */,
+				3548A4C32A54C16F00AFD8C7 /* Preview Assets.xcassets */,
 			);
 			path = "Preview Content";
 			sourceTree = "<group>";
 		};
-		357E96D629FC3BC400D75430 /* Views */ = {
+		3548A4C62A54C16F00AFD8C7 /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				357E96D729FC3BC400D75430 /* DetailView.swift */,
-				357E96D829FC3BC400D75430 /* UploadView.swift */,
-				357E96D929FC3BC400D75430 /* GalleryView.swift */,
+				3548A4C72A54C16F00AFD8C7 /* DetailView.swift */,
+				3548A4C82A54C16F00AFD8C7 /* UploadView.swift */,
+				3548A4C92A54C16F00AFD8C7 /* GalleryView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -107,7 +108,7 @@
 		35A1645229CAC0A400FD2680 = {
 			isa = PBXGroup;
 			children = (
-				357E96C729FC3BC400D75430 /* Inkasso */,
+				3548A4B82A54C16F00AFD8C7 /* Inkarta */,
 				35A1645C29CAC0A400FD2680 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -115,7 +116,7 @@
 		35A1645C29CAC0A400FD2680 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				35A1645B29CAC0A400FD2680 /* Inkasso.app */,
+				35A1645B29CAC0A400FD2680 /* Inkarta.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -123,9 +124,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		35A1645A29CAC0A400FD2680 /* Inkasso */ = {
+		35A1645A29CAC0A400FD2680 /* Inkarta */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 35A1646929CAC0A500FD2680 /* Build configuration list for PBXNativeTarget "Inkasso" */;
+			buildConfigurationList = 35A1646929CAC0A500FD2680 /* Build configuration list for PBXNativeTarget "Inkarta" */;
 			buildPhases = (
 				35A1645729CAC0A400FD2680 /* Sources */,
 				35A1645829CAC0A400FD2680 /* Frameworks */,
@@ -135,9 +136,9 @@
 			);
 			dependencies = (
 			);
-			name = Inkasso;
+			name = Inkarta;
 			productName = Picosso;
-			productReference = 35A1645B29CAC0A400FD2680 /* Inkasso.app */;
+			productReference = 35A1645B29CAC0A400FD2680 /* Inkarta.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -155,7 +156,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 35A1645629CAC0A400FD2680 /* Build configuration list for PBXProject "Inkasso" */;
+			buildConfigurationList = 35A1645629CAC0A400FD2680 /* Build configuration list for PBXProject "Inkarta" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -168,7 +169,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				35A1645A29CAC0A400FD2680 /* Inkasso */,
+				35A1645A29CAC0A400FD2680 /* Inkarta */,
 			);
 		};
 /* End PBXProject section */
@@ -178,8 +179,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				357E96E329FC3BC400D75430 /* Preview Assets.xcassets in Resources */,
-				357E96DF29FC3BC400D75430 /* Assets.xcassets in Resources */,
+				3548A4D22A54C16F00AFD8C7 /* Preview Assets.xcassets in Resources */,
+				3548A4CE2A54C16F00AFD8C7 /* Assets.xcassets in Resources */,
+				3548A4D82A54C16F00AFD8C7 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -190,17 +192,17 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				357E96E229FC3BC400D75430 /* Endpoint.swift in Sources */,
-				357E96E729FC3BC400D75430 /* UploadView.swift in Sources */,
-				357E96E029FC3BC400D75430 /* Artwork.swift in Sources */,
-				357E96E629FC3BC400D75430 /* DetailView.swift in Sources */,
-				357E96E129FC3BC400D75430 /* ErrorAlert.swift in Sources */,
-				357E96DE29FC3BC400D75430 /* InkassoApp.swift in Sources */,
-				357E96E829FC3BC400D75430 /* GalleryView.swift in Sources */,
-				357E96DB29FC3BC400D75430 /* GalleryViewModel.swift in Sources */,
-				357E96DD29FC3BC400D75430 /* DetailViewModel.swift in Sources */,
-				357E96DC29FC3BC400D75430 /* UploadViewModel.swift in Sources */,
-				357E96E429FC3BC400D75430 /* Utils.swift in Sources */,
+				3548A4CB2A54C16F00AFD8C7 /* GalleryViewModel.swift in Sources */,
+				3548A4D62A54C16F00AFD8C7 /* UploadView.swift in Sources */,
+				3548A4D52A54C16F00AFD8C7 /* DetailView.swift in Sources */,
+				3548A4D02A54C16F00AFD8C7 /* ErrorAlert.swift in Sources */,
+				3548A4CD2A54C16F00AFD8C7 /* DetailViewModel.swift in Sources */,
+				3548A4CF2A54C16F00AFD8C7 /* Artwork.swift in Sources */,
+				3548A4D32A54C16F00AFD8C7 /* InkartaApp.swift in Sources */,
+				3548A4D12A54C16F00AFD8C7 /* Endpoint.swift in Sources */,
+				3548A4D72A54C16F00AFD8C7 /* GalleryView.swift in Sources */,
+				3548A4CC2A54C16F00AFD8C7 /* UploadViewModel.swift in Sources */,
+				3548A4D42A54C16F00AFD8C7 /* Utils.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -328,11 +330,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Inkasso/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Inkarta/Preview Content\"";
 				DEVELOPMENT_TEAM = XXYXWGAW9Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Inkasso/Info.plist;
+				INFOPLIST_FILE = Inkarta/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -342,7 +344,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ritamsarmah.Inkasso;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ritamsarmah.Inkarta;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -357,11 +359,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"Inkasso/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"Inkarta/Preview Content\"";
 				DEVELOPMENT_TEAM = XXYXWGAW9Y;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = Inkasso/Info.plist;
+				INFOPLIST_FILE = Inkarta/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -371,7 +373,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.ritamsarmah.Inkasso;
+				PRODUCT_BUNDLE_IDENTIFIER = com.ritamsarmah.Inkarta;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -382,7 +384,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		35A1645629CAC0A400FD2680 /* Build configuration list for PBXProject "Inkasso" */ = {
+		35A1645629CAC0A400FD2680 /* Build configuration list for PBXProject "Inkarta" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				35A1646729CAC0A500FD2680 /* Debug */,
@@ -391,7 +393,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		35A1646929CAC0A500FD2680 /* Build configuration list for PBXNativeTarget "Inkasso" */ = {
+		35A1646929CAC0A500FD2680 /* Build configuration list for PBXNativeTarget "Inkarta" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				35A1646A29CAC0A500FD2680 /* Debug */,

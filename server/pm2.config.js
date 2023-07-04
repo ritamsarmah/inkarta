@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
         {
-            name: "inkasso",
+            name: "inkarta",
             script: "app.py",
             interpreter: "venv/bin/python3",
             interpreter_args: "-u",
