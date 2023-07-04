@@ -3,9 +3,9 @@
 
 This repository includes three parts for a wirelessly configurable e-ink picture frame:
 
-- Arduino sketch for the Inkplate ESP32-based e-paper display
-- Flask server for processing and storing artwork
-- iOS app for convenient artwork management
+1. Arduino sketch for the Inkplate ESP32-based e-paper display
+2. Flask server for processing and storing artwork
+3. iOS app for convenient artwork management
 
 ## Features
 
@@ -19,9 +19,9 @@ This repository includes three parts for a wirelessly configurable e-ink picture
 ### Inkplate
 
 1. Follow instructions for setting up the [Inkplate with Arduino IDE](https://github.com/SolderedElectronics/Inkplate-Arduino-library/tree/master). In the Arduino IDE:
-  - Select the correct board (e.g., sketch was written for Inkplate10)
-  - Select the correct port
-  - Select upload speed of 115200
+    - Select the correct board (e.g., sketch was written for Inkplate10)
+    - Select the correct port
+    - Select upload speed of 115200
 2. Upload `inkplate/inkplate.ino` program to the Inkplate.
 
 ## Reference
