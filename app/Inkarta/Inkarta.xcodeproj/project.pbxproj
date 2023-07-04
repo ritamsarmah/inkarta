@@ -20,7 +20,6 @@
 		3548A4D52A54C16F00AFD8C7 /* DetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C72A54C16F00AFD8C7 /* DetailView.swift */; };
 		3548A4D62A54C16F00AFD8C7 /* UploadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C82A54C16F00AFD8C7 /* UploadView.swift */; };
 		3548A4D72A54C16F00AFD8C7 /* GalleryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3548A4C92A54C16F00AFD8C7 /* GalleryView.swift */; };
-		3548A4D82A54C16F00AFD8C7 /* Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3548A4CA2A54C16F00AFD8C7 /* Info.plist */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -181,7 +180,6 @@
 			files = (
 				3548A4D22A54C16F00AFD8C7 /* Preview Assets.xcassets in Resources */,
 				3548A4CE2A54C16F00AFD8C7 /* Assets.xcassets in Resources */,
-				3548A4D82A54C16F00AFD8C7 /* Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
