@@ -5,7 +5,7 @@
 #include "Inkplate.h"
 #include "secrets.h"
 
-Inkplate display(INKPLATE_1BIT); // NOTE: Can't use partial update in program
+Inkplate display(INKPLATE_1BIT);
 
 /* Globals */
 
@@ -49,13 +49,13 @@ void rtcSetDateTime() {
 /* Main */
 
 void setup() {
-  Serial.begin(115200);
   display.begin();
 
   display.setRotation(3);
   display.setTextSize(2);
   display.setTextColor(BLACK);
 
+  // Clear alarm flag from any previous alarm
   display.rtcClearAlarmFlag();
 
   // Check for low battery
@@ -84,26 +84,21 @@ void setup() {
     return;
   }
 
-  // // Refresh display to show artwork
+  // Refresh display to show artwork
   display.display();
 
   // Disconnect Wi-Fi
   display.disconnect();
-
-  // Set alarm to wakeup at midnight tomorrow
+ 
+  // Set wakeup at midnight tomorrow
   uint32_t currentEpoch = display.rtcGetEpoch();
-  // uint32_t secondsUntilMidnight = 86400 - (currentEpoch % 86400);
-  uint32_t secondsUntilMidnight = 30;
+  uint32_t secondsUntilMidnight = 86400 - (currentEpoch % 86400);
   uint32_t alarmEpoch = currentEpoch + secondsUntilMidnight;
-
-  display.println("Alarm set" + String(alarmEpoch));
-  display.display();
 
   display.rtcSetAlarmEpoch(alarmEpoch, RTC_ALARM_MATCH_DHHMMSS);
 
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_39, LOW); // Enables RTC interrupt to refresh at midnight
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enables wake button to allow on-demand refresh
-
+  esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enable wake via wake button
+  esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39, ESP_EXT1_WAKEUP_ALL_LOW); // Enable wake via RTC interrupt alarm
   esp_deep_sleep_start();
 }
 
