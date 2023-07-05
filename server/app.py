@@ -122,8 +122,10 @@ def upload():
         abort(415, "Unsupported image file extension")
 
     artist = request.args.get('artist', default="Anonymous", type=str)
-    dark = request.args.get('dark', default=False, type=bool)
-    overwrite = request.args.get('overwrite', default=False, type=bool)
+    dark = request.args.get('dark', default=False,
+                            type=lambda q: q.lower() == 'true')
+    overwrite = request.args.get(
+        'overwrite', default=False, type=lambda q: q.lower() == 'true')
 
     # Create unique identifier by hashing title and artist
     identifier = md5(f"{title}{artist}".encode()) \
