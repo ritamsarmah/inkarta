@@ -4,15 +4,15 @@
 This repository includes three parts for a wirelessly configurable e-ink picture frame:
 
 1. Arduino sketch for the Inkplate ESP32-based e-paper display
-2. Flask server for processing and storing artwork
-3. iOS app for convenient artwork management
+2. Flask server for processing and storing images
+3. iOS app for convenient management of image gallery
 
 ## Features
 
 - Automatically changes the picture at midnight
 - Enters low power mode until next refresh (or wake button triggers manual refresh) so battery lasts a *long* time.
-- Flask server supports processing, storing, and retrieving artwork via REST API
-- App provides an easy-to-use interface for managing artwork + metadata
+- Flask server supports processing, storing, and retrieving images via REST API
+- App provides an easy-to-use interface for managing images and metadata
 
 ## Getting Started
 
@@ -22,7 +22,15 @@ This repository includes three parts for a wirelessly configurable e-ink picture
     - Select the correct board (e.g., sketch was written for Inkplate10)
     - Select the correct port
     - Select upload speed of 115200
-2. Upload `inkplate/inkplate.ino` program to the Inkplate.
+  
+2. Create `inkplate/secrets.h` with your Wi-Fi credentials:
+  
+    ```c
+    const char *ssid = "YOUR_WIFI_SSID";
+    const char *password = "YOUR_WIFI_PASSWORD";
+    ```
+
+3. Upload `inkplate/inkplate.ino` program to the Inkplate.
 
 ## Reference
 
