@@ -38,14 +38,24 @@ struct UploadView: View {
                     Toggle("Replace Existing", isOn: $viewModel.canOverwrite)
                 }
                 
-                Button("Upload Artwork") {
+                Button(action: {
                     Task {
                         if await viewModel.save() {
                             dismiss()
                         }
                     }
-                }
-                .disabled(viewModel.title.isEmpty)
+                }, label: {
+                    if viewModel.isUploading {
+                        HStack {
+                            Text("Uploading...")
+                            Spacer()
+                            ProgressView()
+                        }
+                    } else {
+                        Text("Upload Artwork")
+                    }
+                })
+                .disabled(viewModel.title.isEmpty || viewModel.isUploading)
             }
             .scrollDismissesKeyboard(.automatic)
         }

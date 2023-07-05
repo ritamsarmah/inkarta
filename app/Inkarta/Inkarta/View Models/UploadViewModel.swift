@@ -15,6 +15,8 @@ class UploadViewModel: ObservableObject {
     @Published var artist = ""
     @Published var useDarkBackground = false
     @Published var canOverwrite = false
+    
+    @Published var isUploading = false
     @Published var errorInfo = ErrorAlert.Info()
     
     private let imageURL: URL
@@ -35,7 +37,12 @@ class UploadViewModel: ObservableObject {
     }
     
     func save() async -> Bool {
-        guard let imageData else { return false }
+        await MainActor.run { isUploading = true }
+        
+        guard let imageData else {
+            isUploading = false
+            return false
+        }
         
         var components = URLComponents(url: Endpoint.upload.url, resolvingAgainstBaseURL: true)!
         components.queryItems = [
@@ -68,6 +75,8 @@ class UploadViewModel: ObservableObject {
             let (data, response) = try await URLSession.shared.upload(for: request, from: formData as Data)
             
             return await MainActor.run {
+                self.isUploading = false
+                
                 if let message = Utils.errorMessage(for: response, with: data) {
                     self.errorInfo.message = message
                     return false
@@ -78,6 +87,7 @@ class UploadViewModel: ObservableObject {
         } catch let error {
             return await MainActor.run {
                 imageURL.stopAccessingSecurityScopedResource()
+                self.isUploading = false
                 self.errorInfo.message = error.localizedDescription
                 return false
             }

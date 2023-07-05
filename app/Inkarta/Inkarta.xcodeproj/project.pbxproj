@@ -54,13 +54,13 @@
 		3548A4B82A54C16F00AFD8C7 /* Inkarta */ = {
 			isa = PBXGroup;
 			children = (
-				3548A4B92A54C16F00AFD8C7 /* View Models */,
-				3548A4BD2A54C16F00AFD8C7 /* Assets.xcassets */,
 				3548A4BE2A54C16F00AFD8C7 /* Models */,
+				3548A4C62A54C16F00AFD8C7 /* Views */,
+				3548A4B92A54C16F00AFD8C7 /* View Models */,
 				3548A4C22A54C16F00AFD8C7 /* Preview Content */,
+				3548A4BD2A54C16F00AFD8C7 /* Assets.xcassets */,
 				3548A4C42A54C16F00AFD8C7 /* InkartaApp.swift */,
 				3548A4C52A54C16F00AFD8C7 /* Utils.swift */,
-				3548A4C62A54C16F00AFD8C7 /* Views */,
 				3548A4CA2A54C16F00AFD8C7 /* Info.plist */,
 			);
 			path = Inkarta;
