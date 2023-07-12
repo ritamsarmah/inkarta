@@ -9,7 +9,7 @@ Inkplate display(INKPLATE_1BIT);
 
 /* Globals */
 
-// 3.7V/4.2V battery with max 4.2V and nominal voltage of 3.7V
+// 3.7V/4.2V battery
 const double lowBatteryVoltage = 3.4;
 
 // NOTE: width and height are switched due to portrait rotation
@@ -74,7 +74,7 @@ void setup() {
   rtcSetDateTime();
 
   // Download and draw artwork
-  // NOTE: Only can use Windows Bitmap file with color depth of 1, 4, 8 or 24 bits with no compression!
+  // NOTE: Only can use Windows Bitmap file with color depth of 1, 4, 8 or 24 bits with no compression
   char url[256];
   sprintf(url, "http://%s:%d/image?w=%d&h=%d", host, port, widthPx, heightPx);
   if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
@@ -90,12 +90,9 @@ void setup() {
   // Disconnect Wi-Fi
   display.disconnect();
  
-  // Set wakeup at midnight tomorrow
-  uint32_t currentEpoch = display.rtcGetEpoch();
-  uint32_t secondsUntilMidnight = 86400 - (currentEpoch % 86400);
-  uint32_t alarmEpoch = currentEpoch + secondsUntilMidnight;
-
-  display.rtcSetAlarmEpoch(alarmEpoch, RTC_ALARM_MATCH_DHHMMSS);
+  // Set wakeup at a second before midnight (11:59:59 PM)
+  display.rtcGetRtcData();
+  display.rtcSetAlarm(59, 59, 11, display.rtcGetDay(), display.rtcGetWeekday());
 
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enable wake via wake button
   esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39, ESP_EXT1_WAKEUP_ALL_LOW); // Enable wake via RTC interrupt alarm

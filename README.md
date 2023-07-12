@@ -19,7 +19,7 @@ This repository includes three parts for a wirelessly configurable e-ink picture
 ### Inkplate
 
 1. Follow instructions for setting up the [Inkplate with Arduino IDE](https://github.com/SolderedElectronics/Inkplate-Arduino-library/tree/master). In the Arduino IDE:
-    - Select the correct board (e.g., sketch was written for Inkplate10)
+    - Select the correct board (currently only tested on Inkplate10)
     - Select the correct port
     - Select upload speed of 115200
   
