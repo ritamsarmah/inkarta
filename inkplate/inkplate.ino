@@ -91,8 +91,10 @@ void setup() {
   display.disconnect();
  
   // Set wakeup at a second before midnight (11:59:59 PM)
+  // Delay lets enough time pass to schedule during the next day (for the correct day/weekday)
+  delay(5000);
   display.rtcGetRtcData();
-  display.rtcSetAlarm(59, 59, 11, display.rtcGetDay(), display.rtcGetWeekday());
+  display.rtcSetAlarm(59, 59, 23, display.rtcGetDay(), display.rtcGetWeekday());
 
   esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enable wake via wake button
   esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39, ESP_EXT1_WAKEUP_ALL_LOW); // Enable wake via RTC interrupt alarm
