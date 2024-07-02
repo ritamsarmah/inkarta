@@ -1,11 +1,9 @@
 # Inkarta
 
-
-This repository includes three parts for a wirelessly configurable e-ink picture frame:
+This repository includes two parts for a wirelessly configurable e-ink picture frame:
 
 1. Arduino sketch for the Inkplate ESP32-based e-paper display
-2. Flask server for processing and storing images
-3. iOS app for convenient management of image gallery
+2. Web server for image serving and dashboard for image management
 
 ## Features
 
