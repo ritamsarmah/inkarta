@@ -8,12 +8,4 @@ pub struct Image {
     pub id: Identifier,
     /// Title of the image
     pub title: String,
-    /// Name of the image's artist
-    pub artist: Option<String>,
-    /// Background color when fitting image to dimensions
-    pub background: String,
-    /// Binary data for the full image
-    pub data: Vec<u8>,
-    /// Binary data for the thumbnail
-    pub thumbnail: Vec<u8>,
 }

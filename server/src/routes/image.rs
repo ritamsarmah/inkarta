@@ -1,25 +1,25 @@
 use axum::{
-    extract::{Multipart, State},
+    extract::{Multipart, Path, Query, State},
     http::StatusCode,
-    response::IntoResponse,
-    routing::post,
-    Router,
+    response::{IntoResponse, Redirect},
+    routing::{delete, get, post},
+    Json, Router,
 };
 use serde::Deserialize;
 
-use crate::{db, state::AppState};
+use crate::{db, model::Identifier, state::AppState, utils};
 
-#[derive(Deserialize)]
-struct FetchImageQuery {
-    width: Option<u32>,
-    height: Option<u32>,
-}
+// #[derive(Deserialize)]
+// struct FetchImageQuery {
+//     width: Option<u32>,
+//     height: Option<u32>,
+// }
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        // .route("/image/:id", get(get_image).put(update_image))
-        // .route("/image/next", get(fetch_next_image))
         .route("/image", post(create_image))
+        .route("/image/:id", delete(delete_image))
+        .route("/image/next", get(fetch_next_image))
 }
 
 // async fn get_image(
@@ -27,27 +27,20 @@ pub fn router() -> Router<AppState> {
 //     Query(query): Query<FetchImageQuery>,
 //     State(state): State<AppState>,
 // ) -> impl IntoResponse {
+//     db::get_image(, )
 //     todo!()
 // }
 
-// async fn update_image(
-//     Path(id): Path<Identifier>,
-//     Json(payload): Json<Image>,
-//     State(state): State<AppState>,
-// ) -> impl IntoResponse {
-//     todo!()
-// }
+async fn delete_image(Path(id): Path<Identifier>, State(state): State<AppState>) -> Redirect {
+    match db::delete_image(&state.pool, id).await {
+        Ok(_) => Redirect::to("/"),
+        Err(error) => Redirect::to(format!("/error/{}", error).as_ref()),
+    }
+}
 
-// async fn delete_image(
-//     Path(id): Path<Identifier>,
-//     State(state): State<AppState>,
-// ) -> impl IntoResponse {
-//     todo!()
-// }
-
-// async fn fetch_next_image() -> impl IntoResponse {
-//     todo!()
-// }
+async fn fetch_next_image() -> impl IntoResponse {
+    todo!()
+}
 
 async fn create_image(
     State(state): State<AppState>,
@@ -68,29 +61,13 @@ async fn create_image(
                 data = field.bytes().await.ok().map(|bytes| bytes.to_vec());
             }
             _ => {}
-        }
+        };
     }
 
-    if let (Some(title), Some(data)) = (title, data) {
-        // TODO: Convert to bitmap
-        // TODO: Create thumbnail
-        let thumbnail = data.clone();
-        let background = if dark { "#000000" } else { "#FFFFFF" };
-
-        match db::create_image(
-            &state.pool,
-            &title,
-            artist.as_deref(),
-            background.into(),
-            data,
-            thumbnail,
-        )
-        .await
-        {
-            Ok(_) => StatusCode::OK,
-            Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
-        }
+    if let Some(title) = title {
+        db::create_image(&title).await;
+        Redirect::to("/")
     } else {
-        StatusCode::BAD_REQUEST
+        utils::redirect_error("error".into())
     }
 }

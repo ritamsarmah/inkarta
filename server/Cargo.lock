@@ -1216,6 +1216,8 @@ dependencies = [
  "anyhow",
  "axum",
  "maud",
+ "percent-encoding",
+ "rand",
  "serde",
  "serde_json",
  "sqlx",

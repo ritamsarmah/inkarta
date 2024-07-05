@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use anyhow::Result;
-use axum::{routing::get_service, Router};
+use axum::{response::Redirect, routing::get_service, Router};
 use server::{db, routes, state::AppState};
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use tokio::net::TcpListener;
