@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use axum::{
     extract::{Multipart, Path, Query, State},
     http::StatusCode,
@@ -5,6 +7,7 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
+use image::{load_from_memory, ImageFormat};
 use serde::Deserialize;
 
 use crate::{db, model::Identifier, state::AppState, utils};
@@ -52,20 +55,28 @@ async fn create_image(
     let mut data = None;
 
     while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap().to_string();
-        match name.as_str() {
+        let name = field.name().unwrap();
+        match name {
             "title" => title = field.text().await.ok(),
             "artist" => artist = field.text().await.ok(),
             "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
             "data" => {
-                data = field.bytes().await.ok().map(|bytes| bytes.to_vec());
+                data = field.bytes().await.ok().map(|bytes| {
+                    let img = load_from_memory(&bytes).unwrap();
+                    let mut bitmap: Vec<u8> = Vec::new();
+                    img.write_to(&mut Cursor::new(&mut bitmap), ImageFormat::Bmp)
+                        .unwrap();
+                    bitmap
+                });
             }
             _ => {}
         };
     }
 
-    if let Some(title) = title {
-        db::create_image(&title).await;
+    if let (Some(title), Some(artist), Some(data)) = (title, artist, data) {
+        let background = if dark { "#000000" } else { "#FFFFFF" };
+
+        db::create_image(&title, &artist, &background, data).await;
         Redirect::to("/")
     } else {
         utils::redirect_error()

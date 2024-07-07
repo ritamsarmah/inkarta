@@ -9,22 +9,6 @@ use crate::model::{Identifier, Image};
 static STORE: Mutex<Vec<Image>> = Mutex::new(Vec::new());
 
 pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
-    STORE.lock().unwrap().push(Image {
-        title: "Sunset Overdrive".into(),
-        artist: Some("Alex Johnson".into()),
-        id: 1,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Ocean's Melody".into(),
-        artist: Some("Casey Brown".into()),
-        id: 2,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Mountain Whisper".into(),
-        artist: Some("Dana Lee".into()),
-        id: 3,
-    });
-
     let result = sqlx::query(
         "create table if not exists images (
             id integer primary key autoincrement,
@@ -76,13 +60,22 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
 //     Ok(row)
 // }
 
-pub async fn create_image(title: &str) {
+pub async fn create_image(
+    title: &str,
+    artist: &str,
+    background: &str,
+    data: Vec<u8>,
+) -> Result<()> {
     let mut rng = rand::thread_rng();
     STORE.lock().unwrap().push(Image {
-        title: title.into(),
-        artist: Some("Ritam Sarmah".into()),
         id: rng.gen(),
+        title: title.trim().into(),
+        artist: artist.trim().into(),
+        background: background.into(),
+        data,
     });
+
+    Ok(())
 }
 
 pub async fn get_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<Image> {

@@ -31,9 +31,9 @@ async fn home_page(State(state): State<AppState>) -> impl IntoResponse {
                             @let href = format!("x/image/{}", image.id);
                             a href=(href) x-target="modal" style="text-decoration:none" {
                                 .image {
-                                    // img src="https://picsum.photos/256/256";
+                                    img src=(image.src()) alt="Image Preview";
                                     h5 style="color:var(--text-1)" { (image.title) }
-                                    h6 style="color:var(--text-2)" { (image.artist.unwrap_or_default()) }
+                                    h6 style="color:var(--text-2)" { (image.artist) }
                                 }
                             }
                         }
@@ -94,9 +94,9 @@ async fn image_modal(
         Ok(image) => modal_template(html! {
             #image-preview {
                 h4 { (image.title) }
-                h5 { (image.artist.unwrap_or_default()) }
+                h5 { (image.artist) }
 
-                img src="https://picsum.photos/500/500" width="100%";
+                img src=(image.src());
             }
         })
         .into_response(),

@@ -6,6 +6,8 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.86"
 axum = { version = "0.7.5", features = ["form", "multipart"] }
+base64 = "0.22.1"
+image = "0.25.1"
 maud = { version = "0.26.0", features = ["axum"] }
 percent-encoding = "2.3.1"
 rand = "0.8.5"
