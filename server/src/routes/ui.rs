@@ -6,13 +6,14 @@ use axum::{
 };
 use maud::{html, Markup, DOCTYPE};
 
-use crate::{db, state::AppState, utils};
+use crate::{db, model::Identifier, state::AppState, utils};
 
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(home_page))
         .route("/error/:message", get(error_page))
-        .route("/x/upload", get(upload))
+        .route("/x/image/:id", get(image_modal))
+        .route("/x/upload", get(upload_modal))
         .fallback(not_found_page)
 }
 
@@ -25,12 +26,12 @@ async fn home_page(State(state): State<AppState>) -> impl IntoResponse {
                 main {
                     h1 { "Gallery" }
 
-                    #gallery x-init {
+                    #gallery x-init "@ajax:before"="$dispatch('dialog:open')" {
                         @for image in images {
                             @let href = format!("x/image/{}", image.id);
-                            a href=(href) style="text-decoration:none" {
+                            a href=(href) x-target="modal" style="text-decoration:none" {
                                 .image {
-                                    img src="https://picsum.photos/256/256";
+                                    // img src="https://picsum.photos/256/256";
                                     h5 style="color:var(--text-1)" { (image.title) }
                                     h6 style="color:var(--text-2)" { (image.artist.unwrap_or_default()) }
                                 }
@@ -38,20 +39,28 @@ async fn home_page(State(state): State<AppState>) -> impl IntoResponse {
                         }
                     }
 
-                    dialog x-init "@dialog:open.window"="$el.showModal()" {
-                        #modal { }
+                    form action="/x/upload" x-init x-target="modal" "@ajax:before"="$dispatch('dialog:open')" {
+                        button .btn.upload {
+                            "+"
+                        }
+                    }
+
+                    dialog x-init
+                        "@dialog:open.window"="$el.showModal()"
+                        "@dialog:close.window"="$el.close()" {
+                            #modal { }
                     }
                 }
             };
 
-            template("Gallery", html).into_response()
+            page_template("Gallery", html).into_response()
         }
-        Err(error) => utils::redirect_error(error.to_string()).into_response(),
+        Err(_) => utils::redirect_error().into_response(),
     }
 }
 
 async fn not_found_page() -> Markup {
-    template(
+    page_template(
         "Page Not Found",
         html! {
             main .spaced {
@@ -63,13 +72,12 @@ async fn not_found_page() -> Markup {
     )
 }
 
-async fn error_page(Path(message): Path<String>) -> Markup {
-    template(
+async fn error_page() -> Markup {
+    page_template(
         "Error",
         html! {
             main {
                 b { "An error occurred processing the request" }
-                p { (message) }
                 a href="/" { "Back to home" }
             }
         },
@@ -78,37 +86,85 @@ async fn error_page(Path(message): Path<String>) -> Markup {
 
 /* Partials */
 
-async fn upload() -> Markup {
-    html! {
-        #modal {
-            .modal-content {
-                form method="post" action="/image" enctype="multipart/form-data" {
-                    label for="title" { "Title: " }
-                    input type="text" id="title" name="title" required="true";
-                    br;
+async fn image_modal(
+    Path(id): Path<Identifier>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    match db::get_image(&state.pool, id).await {
+        Ok(image) => modal_template(html! {
+            #image-preview {
+                h4 { (image.title) }
+                h5 { (image.artist.unwrap_or_default()) }
 
-                    label for="artist" { "Artist: " }
-                    input type="text" id="artist" name="artist";
-                    br;
-
-                    label for="color" { "Prefers Dark Background: " }
-                    input type="checkbox" id="dark" name="dark";
-                    br;
-
-                    label for="data" { "Select Image: " }
-                    input type="file" id="data" name="data" accept="image/*" required="true";
-                    br;
-
-                    input type="submit" value="Upload Image";
-                }
+                img src="https://picsum.photos/500/500" width="100%";
             }
-        }
+        })
+        .into_response(),
+        Err(_) => utils::redirect_error().into_response(),
     }
 }
 
-/* Template */
+async fn upload_modal() -> Markup {
+    let on_change_image = r#"
+        file = $event.target.files[0];
+        if (file) {
+            previewURL = URL.createObjectURL(file);
+        }
+    "#;
 
-fn template(title: &str, body: Markup) -> Markup {
+    modal_template(html! {
+        form #upload-form method="post" action="/image" enctype="multipart/form-data" x-init x-data="{ file: null, previewURL: '' }" {
+            label {
+                input type="file"
+                    #input-image
+                    .hidden
+                    name="data"
+                    accept="image/*"
+                    required="true"
+                    "@change"=(on_change_image);
+
+                .flex-center style="height:256px" {
+                    img ":src"="previewURL" x-cloak x-show="previewURL"
+                        style="max-width:100%; max-height:100%; cursor:pointer;";
+
+                    .upload-image-btn x-show="!previewURL" {
+                        svg xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke-width="1"
+                            stroke="currentColor" {
+                                path stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="m2.25 15.75 5.159-5.159a2.25 2.25 0 0 1 3.182 0l5.159 5.159m-1.5-1.5 1.409-1.409a2.25 2.25 0 0 1 3.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 0 0 1.5-1.5V6a1.5 1.5 0 0 0-1.5-1.5H3.75A1.5 1.5 0 0 0 2.25 6v12a1.5 1.5 0 0 0 1.5 1.5Zm10.5-11.25h.008v.008h-.008V8.25Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z";
+                        }
+                        div { "Select Image" }
+                    }
+                }
+            }
+
+            label {
+                "Title: "
+                input type="text" id="title" name="title" required="true";
+            }
+
+            label {
+                "Artist: "
+                input type="text" id="artist" name="artist";
+            }
+
+            label {
+                "Prefers Dark Background: "
+                input type="checkbox" id="dark" name="dark";
+            }
+
+            input type="submit" value="Upload Image";
+        }
+    })
+}
+
+/* Templates */
+
+fn page_template(title: &str, body: Markup) -> Markup {
     html! {
         (DOCTYPE)
         html lang="en" {
@@ -124,6 +180,17 @@ fn template(title: &str, body: Markup) -> Markup {
                 script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.11.1/dist/cdn.min.js" {}
             }
             body { (body) }
+        }
+    }
+}
+
+fn modal_template(content: Markup) -> Markup {
+    html! {
+        #modal x-init {
+            .modal-content "@click.outside"="$dispatch('dialog:clos-btnlo')" {
+                button .btn.close-btn "@click"="$dispatch('dialog:close')" { "✕" }
+                (content)
+            }
         }
     }
 }

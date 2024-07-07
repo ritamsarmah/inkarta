@@ -1,8 +1,8 @@
 @import "https://unpkg.com/open-props";
 @import "https://unpkg.com/open-props/normalize.min.css"; 
-@import "https://unpkg.com/open-props/buttons.min.css"; 
 
 :root {
+    /* Theme */
     --brand: var(--blue-5);
 
     --text-1: var(--gray-12);
@@ -50,6 +50,12 @@ h5, h6, p, small, dd {
     color: var(--text-2);
 }
 
+input[type="text"] {
+    background-color: var(--surface-2);
+}
+
+/* Gallery Homepage */
+
 #gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(var(--size-13), 1fr));
@@ -61,7 +67,7 @@ h5, h6, p, small, dd {
     flex-direction: column;
     gap: var(--size-1);
     padding: var(--size-3);
-    border-radius: var(--size-1);
+    border-radius: var(--radius-2);
     align-items: center;
 }
 
@@ -75,8 +81,10 @@ h5, h6, p, small, dd {
     text-decoration: none;
 }
 
+/* Modal */
+
 #modal {
-    display: none;
+    display: flex;
     position: fixed;
     z-index: 1;
     top: 0;
@@ -88,5 +96,85 @@ h5, h6, p, small, dd {
 }
 
 .modal-content {
-    background-color: var(--gray-4);
+    background-color: var(--surface-1);
+    border-radius: var(--radius-2);
+    margin: var(--size-4) auto;
+    width: 768px;
+    padding: var(--size-6);
+    padding-top: var(--size-10); /* space for close button */
+    position: relative;
+}
+
+/* Modal fills display on small devices */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border-radius: 0;
+    }
+}
+
+.close-btn {
+    position: absolute;
+    top: var(--size-2);
+    right: var(--size-2);
+    font-weight: bold;
+    font-size: var(--font-size-4);
+    width: var(--size-8);
+    height: var(--size-8);
+}
+
+/* Larger tap size on touch screen devices */
+@media (hover: none) and (pointer: coarse) {
+    .close-btn {
+        font-size: var(--font-size-6);
+    }
+}
+
+/* Upload Image Form */
+
+#upload-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--size-4);
+}
+
+.upload-image-btn {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--size-2);
+    width: 80%;
+    height: 100%;
+    border: var(--border-size-1) dashed var(--text-2);
+    border-radius: var(--radius-3);
+    background-color: var(--surface-1);
+    color: var(--text-2);
+    cursor: pointer;
+    padding: var(--size-4);
+}
+
+.upload-image-btn:hover {
+    background-color: var(--surface-2);
+    color: var(--text-1);
+}
+
+/* Utility Classes */
+
+.flex-center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.btn {
+    background-color: transparent
+    padding: var(--size-2);
+    border-radius: var(--radius-2);
+}
+
+.hidden {
+    display: none;
 }

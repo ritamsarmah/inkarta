@@ -24,41 +24,6 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
         artist: Some("Dana Lee".into()),
         id: 3,
     });
-    STORE.lock().unwrap().push(Image {
-        title: "Desert Mirage".into(),
-        artist: Some("Sam Kim".into()),
-        id: 4,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Forest Dreams".into(),
-        artist: Some("Morgan Black".into()),
-        id: 5,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Urban Jungle".into(),
-        artist: Some("Jordan White".into()),
-        id: 6,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Silent Echo".into(),
-        artist: Some("Taylor Green".into()),
-        id: 7,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Twilight Glow".into(),
-        artist: Some("Jamie Fox".into()),
-        id: 8,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Hidden Path".into(),
-        artist: Some("Chris Blue".into()),
-        id: 9,
-    });
-    STORE.lock().unwrap().push(Image {
-        title: "Mystic River".into(),
-        artist: Some("Riley Gold".into()),
-        id: 10,
-    });
 
     let result = sqlx::query(
         "create table if not exists images (

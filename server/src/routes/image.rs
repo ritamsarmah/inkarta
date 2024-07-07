@@ -68,6 +68,6 @@ async fn create_image(
         db::create_image(&title).await;
         Redirect::to("/")
     } else {
-        utils::redirect_error("error".into())
+        utils::redirect_error()
     }
 }
