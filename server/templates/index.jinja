@@ -22,16 +22,15 @@
     </button>
 </nav>
 <main class="mt-8">
-    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {% for thumbnail in thumbnails %}
-            <a href={{ thumbnail.href }}
-                class="space-y-3 p-4 items-center justify-center text-center rounded-md hover:bg-zinc-100 hover:dark:bg-zinc-900 cursor-pointer">
-                <img class="h-full rounded-md" src={{ thumbnail.src }} />
-                <div>
-                    <p class="font-medium">{{ thumbnail.title }}</p>
-                    <p class="font-light text-zinc-500">{{ thumbnail.artist }}</p>
-                </div>
-            </a>
+            <a href="{{ thumbnail.href }}" class="space-y-3 p-4 items-center justify-center text-center rounded-md hover:bg-zinc-100 hover:dark:bg-zinc-900 cursor-pointer flex flex-col">
+            <img class="size-64 object-contain" src="{{ thumbnail.src }}" />
+            <div>
+                <p class="font-medium">{{ thumbnail.title }}</p>
+                <p class="font-light text-zinc-500">{{ thumbnail.artist }}</p>
+            </div>
+        </a>
         {% endfor %}
     </div>
 </main>
