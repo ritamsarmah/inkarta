@@ -1,11 +1,11 @@
-use std::path::Path;
+use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
-use axum::{response::Redirect, routing::get_service, Router};
+use axum::Router;
+use minijinja_autoreload::AutoReloader;
 use server::{db, routes, state::AppState};
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use tokio::net::TcpListener;
-use tower_http::services::ServeFile;
 
 const DATABASE_URL: &str = "inkarta.db";
 const TCP_PORT: u16 = 5000;
@@ -16,24 +16,15 @@ async fn main() -> Result<()> {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    // Create and connect to database
-    let options = SqliteConnectOptions::new()
-        .filename(DATABASE_URL)
-        .create_if_missing(true);
-    let pool = SqlitePool::connect_with(options).await?;
+    let state = AppState {
+        reloader: Arc::new(create_template_reloader()),
+        pool: create_database_pool().await?,
+    };
 
-    db::initialize(&pool).await?;
-
-    // Initialize app state and routes
-    let styles_path = Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("public")
-        .join("styles.css");
-    let state = AppState { pool };
     let app = Router::new()
         .merge(routes::image::router())
         .merge(routes::setting::router())
         .merge(routes::ui::router())
-        .route("/styles.css", get_service(ServeFile::new(styles_path)))
         .with_state(state);
 
     let listener = TcpListener::bind(format!("0.0.0.0:{TCP_PORT}")).await?;
@@ -41,3 +32,36 @@ async fn main() -> Result<()> {
 
     Ok(())
 }
+
+async fn create_database_pool() -> Result<sqlx::Pool<sqlx::Sqlite>> {
+    let options = SqliteConnectOptions::new()
+        .filename(DATABASE_URL)
+        .create_if_missing(true);
+    let pool = SqlitePool::connect_with(options).await?;
+
+    db::initialize(&pool).await?;
+
+    Ok(pool)
+}
+
+fn create_template_reloader() -> AutoReloader {
+    let reloader = AutoReloader::new(move |notifier| {
+        let template_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates");
+        let mut env = minijinja::Environment::new();
+        env.set_loader(minijinja::path_loader(&template_path));
+
+        notifier.set_fast_reload(true);
+        notifier.watch_path(&template_path, true);
+
+        Ok(env)
+    });
+
+    reloader
+}
+
+// fn create_template_env() -> minijinja::Environment<'static> {
+// let mut env = minijinja::Environment::new();
+// let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates");
+// // TODO: Setup dynamic loader
+// env.set_loader(minijinja::path_loader(path));
+// }

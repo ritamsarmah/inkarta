@@ -1,12 +1,7 @@
-use std::sync::Mutex;
-
 use anyhow::Result;
-use rand::Rng;
 use sqlx::{sqlite::SqliteQueryResult, Pool, Sqlite};
 
-use crate::model::{Identifier, Image};
-
-static STORE: Mutex<Vec<Image>> = Mutex::new(Vec::new());
+use crate::model::{Identifier, Image, Thumbnail};
 
 pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
     let result = sqlx::query(
@@ -25,100 +20,56 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
     Ok(result)
 }
 
-// pub async fn create_image(
-//     pool: &Pool<Sqlite>,
-//     title: &str,
-//     artist: Option<&str>,
-//     background: String,
-//     data: Vec<u8>,
-//     thumbnail: Vec<u8>,
-// ) -> Result<Image> {
-//     let mut rng = rand::thread_rng();
-
-//     STORE.lock().unwrap().push(Image {
-//         title: title.into(),
-//         id: rng.gen(),
-//     });
-
-//     let artist = artist.unwrap_or("");
-
-//     let query = "
-//         insert into images (title, artist, background, data, thumbnail)
-//         values (?, ?, ?, ?, ?)
-//         returning id, title, artist, background, data, thumbnail
-//     ";
-
-//     let row = sqlx::query_as::<_, Image>(query)
-//         .bind(title)
-//         .bind(artist)
-//         .bind(background)
-//         .bind(data)
-//         .bind(thumbnail)
-//         .fetch_one(pool)
-//         .await?;
-
-//     Ok(row)
-// }
-
 pub async fn create_image(
+    pool: &Pool<Sqlite>,
     title: &str,
     artist: &str,
     background: &str,
     data: Vec<u8>,
-) -> Result<()> {
-    let mut rng = rand::thread_rng();
-    STORE.lock().unwrap().push(Image {
-        id: rng.gen(),
-        title: title.trim().into(),
-        artist: artist.trim().into(),
-        background: background.into(),
-        data,
-    });
+    thumbnail: Vec<u8>,
+) -> Result<Image> {
+    let query = "
+        insert into images (title, artist, background, data, thumbnail)
+        values (?, ?, ?, ?, ?)
+        returning id, title, artist, background, data, thumbnail
+    ";
 
-    Ok(())
+    let row = sqlx::query_as::<_, Image>(query)
+        .bind(title.trim())
+        .bind(artist.trim())
+        .bind(background)
+        .bind(data)
+        .bind(thumbnail)
+        .fetch_one(pool)
+        .await?;
+
+    Ok(row)
 }
 
 pub async fn get_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<Image> {
-    // let image = sqlx::query_as("select * from images where id = ?")
-    //     .bind(id)
-    //     .fetch_one(pool)
-    //     .await?;
-
-    let image = STORE
-        .lock()
-        .unwrap()
-        .iter()
-        .find(|&image| image.id == id)
-        .unwrap()
-        .clone();
+    let image = sqlx::query_as("select * from images where id = ?")
+        .bind(id)
+        .fetch_one(pool)
+        .await?;
 
     Ok(image)
 }
 
-pub async fn get_images(pool: &Pool<Sqlite>) -> Result<Vec<Image>> {
-    // let images = sqlx::query_as("select * from images")
-    //     .fetch_all(pool)
-    //     .await?;
+pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Result<Vec<Thumbnail>> {
+    let thumbnails = sqlx::query_as("select id, title, artist, thumbnail from images")
+        .fetch_all(pool)
+        .await?;
 
-    let images = STORE.lock().unwrap().clone();
-
-    Ok(images)
+    Ok(thumbnails)
 }
 
 // pub async fn update_image(pool: &Pool<Sqlite>, id: Identifier, image: Image) -> Result<Image> {
-pub async fn update_image(pool: &Pool<Sqlite>, id: Identifier, image: Image) {
-    // let mut original = STORE
-    //     .lock()
-    //     .unwrap()
-    //     .iter()
-    //     .find(|&image| image.id == id)
-    //     .unwrap();
-
-    // original.title = image.title;
-}
 
 pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
-    STORE.lock().unwrap().retain(|image| image.id != id);
+    sqlx::query("delete from images where id = ?")
+        .bind(id)
+        .execute(pool)
+        .await?;
 
     Ok(())
 }

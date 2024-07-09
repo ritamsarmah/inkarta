@@ -7,10 +7,15 @@ use axum::{
     routing::{delete, get, post},
     Json, Router,
 };
-use image::{load_from_memory, ImageFormat};
+use image::{
+    imageops::{resize, FilterType},
+    load_from_memory, DynamicImage, ImageFormat,
+};
 use serde::Deserialize;
 
 use crate::{db, model::Identifier, state::AppState, utils};
+
+const THUMBNAIL_SIZE: u32 = 256;
 
 // #[derive(Deserialize)]
 // struct FetchImageQuery {
@@ -52,7 +57,7 @@ async fn create_image(
     let mut title = None;
     let mut artist = None;
     let mut dark = false;
-    let mut data = None;
+    let mut bitmap: Vec<u8> = Vec::new();
 
     while let Some(field) = multipart.next_field().await.unwrap() {
         let name = field.name().unwrap();
@@ -61,22 +66,44 @@ async fn create_image(
             "artist" => artist = field.text().await.ok(),
             "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
             "data" => {
-                data = field.bytes().await.ok().map(|bytes| {
+                if let Ok(bytes) = field.bytes().await {
                     let img = load_from_memory(&bytes).unwrap();
-                    let mut bitmap: Vec<u8> = Vec::new();
-                    img.write_to(&mut Cursor::new(&mut bitmap), ImageFormat::Bmp)
-                        .unwrap();
-                    bitmap
-                });
+                    img.write_to(&mut Cursor::new(&mut bitmap), ImageFormat::Bmp);
+                    // TODO: Implement black and white conversion
+                    // TODO: Implement failure handling
+                }
             }
             _ => {}
         };
     }
 
-    if let (Some(title), Some(artist), Some(data)) = (title, artist, data) {
+    if let (Some(title), Some(artist)) = (title, artist) {
         let background = if dark { "#000000" } else { "#FFFFFF" };
 
-        db::create_image(&title, &artist, &background, data).await;
+        // let thumbnail = load_from_memory(&data)
+        //     .unwrap()
+        //     .resize(100, 100, FilterType::Lanczos3)
+        //     .to_rgb8();
+
+        let thumbnail = load_from_memory(&bitmap)
+            .unwrap()
+            .resize(THUMBNAIL_SIZE, THUMBNAIL_SIZE, FilterType::Lanczos3)
+            .to_rgb8();
+
+        let mut thumbnail_bytes: Vec<u8> = Vec::new();
+        DynamicImage::ImageRgb8(thumbnail)
+            .write_to(&mut Cursor::new(&mut thumbnail_bytes), ImageFormat::Bmp)
+            .unwrap();
+
+        db::create_image(
+            &state.pool,
+            &title,
+            &artist,
+            &background,
+            bitmap,
+            thumbnail_bytes,
+        )
+        .await;
         Redirect::to("/")
     } else {
         utils::redirect_error()
