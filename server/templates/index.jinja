@@ -1,37 +1,92 @@
 {% extends "layout.jinja" %}
 {% block body %}
-<nav class="flex gap-8 items-center justify-between">
-    <a href="/x/settings"
-        class="flex items-center justify-center size-10 text-black dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-            stroke="currentColor" class="size-6">
-            <path stroke-linecap="round" stroke-linejoin="round"
-                d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-        </svg>
-    </a>
-    <h1 class="text-2xl font-thin tracking-[0.3rem] uppercase pt-0.5">
-        Gallery
-    </h1>
-    <button
-        class="flex items-center justify-center size-10 text-black dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900"
-        x-init @click="window.showOpenFilePicker()">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-            stroke="currentColor" class="size-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-        </svg>
-    </button>
-</nav>
-<main class="mt-8">
-    <div class="grid grid-cols sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-        {% for thumbnail in thumbnails %}
-            <a href="{{ thumbnail.href }}" class="space-y-3 p-4 items-center justify-center text-center rounded-md hover:bg-zinc-100 hover:dark:bg-zinc-900 cursor-pointer flex flex-col">
-            <img class="size-64 object-contain" src="{{ thumbnail.src }}" />
-            <div>
-                <p class="font-medium">{{ thumbnail.title }}</p>
-                <p class="font-light text-zinc-500">{{ thumbnail.artist }}</p>
-            </div>
+<div x-data="{ file: null, imageUrl: null }">
+    <nav class="flex gap-8 items-center justify-between">
+        <!-- Settings Button -->
+        <a href="/x/settings"
+            class="flex items-center justify-center size-10 text-black dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                stroke="currentColor" class="size-6">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+            </svg>
         </a>
-        {% endfor %}
-    </div>
-</main>
+
+        <!-- Title -->
+        <h1 class="text-2xl font-light tracking-[0.3rem] uppercase pt-0.5">
+            Gallery
+        </h1>
+
+        <!-- Add Button -->
+        <label>
+            <input
+                class="hidden"
+                type="file"
+                name="data"
+                accept="image/*"
+                @change="file = $event.target.files[0]; imageUrl = URL.createObjectURL(file); $dispatch('dialog:open')"
+            />
+            <div x-init class="flex items-center justify-center size-10 text-black cursor-pointer dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+            </div>
+        </label>
+    </nav>
+
+    <!-- Image Gallery -->
+    <main class="mt-8">
+        <div class="grid grid-cols sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {% for thumbnail in thumbnails %}
+                <a href="{{ thumbnail.href }}" class="space-y-3 p-4 items-center justify-center text-center rounded-md hover:bg-zinc-100 hover:dark:bg-zinc-900 cursor-pointer flex flex-col">
+                <img class="size-64 object-contain" src="{{ thumbnail.src }}" />
+                <div>
+                    <p class="font-medium">{{ thumbnail.title }}</p>
+                    <p class="font-light text-zinc-500">{{ thumbnail.artist }}</p>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    </main>
+
+    <!-- Modal Dialog -->
+    <dialog
+        @dialog:open.window="$el.showModal()"
+        @dialog:close.window="$el.close()"
+        class="fixed top-0 right-0 left-0 z-1 justify-center items-center w-full h-full backdrop-blur-md"
+    >
+        <div id="modal" class="flex flex-col gap-5 md:flex-row w-full h-full rounded-md bg-white/3">
+            <button @click="$dispatch('@dialog:close')">
+                Close
+            </button
+            <img :src="imageUrl" class="size-64"> <!-- TODO: Adjust size -->
+            <form @submit.prevent="uploadImage" class="flex flex-col gap-4">
+                <div>
+                    <label for="image-title" class="block mb-2 text-sm font-medium text-zinc-900 dark:text-white">Title</label>
+                    <input type="text" id="image-title" class="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" required />
+                </div>
+                <div>
+                    <label for="image-artist" class="block mb-2 text-sm font-medium text-zinc-900 dark:text-white">Artist</label>
+                    <input type="text" id="image-artist" class="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
+                </div>
+                <div class="flex items-center mb-4">
+                    <input id="use-dark-checkbox" type="checkbox" value="" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                    <label for="use-dark-checkbox" class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Use dark background</label>
+                </div>
+                <button class="rounded-md p-3 text-white bg-blue-600 hover:bg-blue-700">Upload</button>
+            </form>
+        </div>
+    </dialog>
+</div>
+<script>
+    async function uploadImage() {
+        const formData = new FormData()
+        formData.append("title", document.getElementById("image-title").value);
+        formData.append("artist", document.getElementById("image-artist").value);
+        formData.append("dark", document.getElementById("use-dark-checkbox").value);
+
+        this.file
+        alert("Hello");
+    }
+</script>
 {% endblock %}

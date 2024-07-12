@@ -1,5 +1,6 @@
 use std::io::Cursor;
 
+use anyhow::anyhow;
 use axum::{
     extract::{Multipart, Path, Query, State},
     http::StatusCode,
@@ -42,7 +43,7 @@ pub fn router() -> Router<AppState> {
 async fn delete_image(Path(id): Path<Identifier>, State(state): State<AppState>) -> Redirect {
     match db::delete_image(&state.pool, id).await {
         Ok(_) => Redirect::to("/"),
-        Err(error) => Redirect::to(format!("/error/{}", error).as_ref()),
+        Err(error) => utils::handle_error(error, StatusCode::INTERNAL_SERVER_ERROR),
     }
 }
 
@@ -80,6 +81,8 @@ async fn create_image(
     if let (Some(title), Some(artist)) = (title, artist) {
         let background = if dark { "#000000" } else { "#FFFFFF" };
 
+        // TODO: Process image to black and white
+
         // let thumbnail = load_from_memory(&data)
         //     .unwrap()
         //     .resize(100, 100, FilterType::Lanczos3)
@@ -106,6 +109,9 @@ async fn create_image(
         .await;
         Redirect::to("/")
     } else {
-        utils::redirect_error()
+        utils::handle_error(
+            anyhow!("Failed to parse image upload form"),
+            StatusCode::BAD_REQUEST,
+        )
     }
 }
