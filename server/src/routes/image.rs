@@ -66,7 +66,7 @@ async fn create_image(
             "title" => title = field.text().await.ok(),
             "artist" => artist = field.text().await.ok(),
             "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
-            "data" => {
+            "file" => {
                 if let Ok(bytes) = field.bytes().await {
                     let img = load_from_memory(&bytes).unwrap();
                     img.write_to(&mut Cursor::new(&mut bitmap), ImageFormat::Bmp);
@@ -82,11 +82,6 @@ async fn create_image(
         let background = if dark { "#000000" } else { "#FFFFFF" };
 
         // TODO: Process image to black and white
-
-        // let thumbnail = load_from_memory(&data)
-        //     .unwrap()
-        //     .resize(100, 100, FilterType::Lanczos3)
-        //     .to_rgb8();
 
         let thumbnail = load_from_memory(&bitmap)
             .unwrap()

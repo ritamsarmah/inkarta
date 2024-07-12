@@ -1,5 +1,8 @@
+{% extends "modal.jinja" %}
+{% block modal %}
 <img class="size-64 object-contain" src="{{ image.src }}" />
 <div>
     <p class="font-medium">{{ image.title }}</p>
     <p class="font-light text-zinc-500">{{ image.artist }}</p>
 </div>
+{% endblock %}

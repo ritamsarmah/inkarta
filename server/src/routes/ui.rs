@@ -30,9 +30,9 @@ struct TemplateImage {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(gallery))
-        // .route("/error/:message", get(error_page))
+        .route("/x/upload", get(partial_upload))
+        .route("/x/settings", get(partial_settings))
         .route("/x/image/:id", get(partial_image))
-        // .route("/x/upload", get(partial_upload))
         .fallback(not_found)
 }
 
@@ -74,6 +74,22 @@ async fn not_found(State(state): State<AppState>) -> Html<String> {
 
 /* Partials */
 
+async fn partial_upload(State(state): State<AppState>) -> impl IntoResponse {
+    let env = state.reloader.acquire_env().unwrap();
+    let template = env.get_template("partials/upload.jinja").unwrap();
+    let html = template.render(()).unwrap();
+
+    Html(html).into_response()
+}
+
+async fn partial_settings(State(state): State<AppState>) -> impl IntoResponse {
+    let env = state.reloader.acquire_env().unwrap();
+    let template = env.get_template("partials/settings.jinja").unwrap();
+    let html = template.render(()).unwrap();
+
+    Html(html).into_response()
+}
+
 async fn partial_image(
     Path(id): Path<Identifier>,
     State(state): State<AppState>,
@@ -100,5 +116,5 @@ async fn partial_image(
 /* Utilities */
 
 fn to_src(data: Vec<u8>) -> String {
-    format!("data:image/bmp;base64,{}", BASE64_STANDARD.encode(&data))
+    format!("data:image/bmp;base64,{}", BASE64_STANDARD.encode(data))
 }
