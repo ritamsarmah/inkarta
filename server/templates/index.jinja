@@ -1,52 +1,59 @@
 {% extends "layout.jinja" %}
 {% block body %}
-<div x-data="{ modal: false }">
-    <div x-show="!modal">
-        <nav class="flex gap-8 items-center justify-between" @ajax:before="modal = true">
-            <!-- Settings Button -->
-            <a href="/x/settings" x-target="modal" @click="modal = true"
-                class="flex items-center justify-center size-10 text-black dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
-                    stroke="currentColor" class="size-6">
-                    <path stroke-linecap="round" stroke-linejoin="round"
-                        d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-                </svg>
-            </a>
-
-            <!-- Title -->
-            <h1 class="text-2xl font-light tracking-[0.3rem] uppercase pt-0.5">
-                Gallery
-            </h1>
-
-            <!-- Add Button -->
-            <a href="/x/upload" x-target="modal"
-                class="flex items-center justify-center size-10 text-black cursor-pointer dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-            </a>
-        </nav>
-
-        <!-- Image Gallery -->
-        <main class="mt-8">
-            <div class="grid grid-cols sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {% for thumbnail in thumbnails %}
-                    <a href="{{ thumbnail.href }}" class="space-y-3 p-4 items-center justify-center text-center rounded-md hover:bg-zinc-100 hover:dark:bg-zinc-900 cursor-pointer flex flex-col">
-                    <img class="size-64 object-contain" src="{{ thumbnail.src }}" />
-                    <div>
-                        <p class="font-medium">{{ thumbnail.title }}</p>
-                        <p class="font-light text-zinc-500">{{ thumbnail.artist }}</p>
-                    </div>
+    <div x-data="{ modal: false }">
+        <div x-show="!modal">
+            <nav class="flex gap-8 items-center justify-between"
+                 @ajax:before="modal = true">
+                <!-- Settings Button -->
+                <a href="/x/settings"
+                   x-target="modal"
+                   @click="modal = true"
+                   class="flex items-center justify-center size-10 text-black dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="1.5"
+                         stroke="currentColor"
+                         class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                    </svg>
                 </a>
-                {% endfor %}
-            </div>
-        </main>
+                <!-- Title -->
+                <h1 class="text-2xl font-light tracking-[0.3rem] uppercase pt-0.5">Gallery</h1>
+                <!-- Add Button -->
+                <a href="/x/upload"
+                   x-target="modal"
+                   class="flex items-center justify-center size-10 text-black cursor-pointer dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
+                    <svg xmlns="http://www.w3.org/2000/svg"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke-width="1.5"
+                         stroke="currentColor"
+                         class="size-6">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                </a>
+            </nav>
+            <!-- Image Gallery -->
+            <main class="mt-8">
+                <div class="grid grid-cols sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {% for thumbnail in thumbnails %}
+                        <a href="{{ thumbnail.href }}"
+                           class="space-y-3 p-4 items-center justify-center text-center rounded-md hover:bg-zinc-100 hover:dark:bg-zinc-900 cursor-pointer flex flex-col">
+                            <img class="size-64 object-contain" src="{{ thumbnail.src }}" />
+                            <div>
+                                <p class="font-medium">{{ thumbnail.title }}</p>
+                                <p class="font-light text-zinc-500">{{ thumbnail.artist }}</p>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            </main>
+        </div>
+        <!-- Modal Dialog -->
+        <div x-show="modal"
+             class="fixed top-0 left-0 flex flex-col items-center justify-center w-full h-full bg-white dark:bg-zinc-800">
+            <div id="modal"></div>
+        </div>
     </div>
-
-    <!-- Modal Dialog -->
-    <div x-show="modal"
-        class="fixed top-0 left-0 flex flex-col items-center justify-center w-full h-full bg-white dark:bg-zinc-800">
-        <div id="modal"></div>
-    </div>
-</div>
 {% endblock %}

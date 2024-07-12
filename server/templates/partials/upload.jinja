@@ -1,4 +1,52 @@
 {% extends "modal.jinja" %}
 {% block modal %}
-<p>upload</p>
+    <form class="w-full max-w-xl" x-data="{ imageUrl: null }">
+        <label x-show="!imageUrl"
+               class="border-dashed border-2 border-gray-400 p-10 w-full flex justify-center items-center cursor-pointer"
+               @drop.prevent="handleFileUpload($event)"
+               @dragover.prevent="$event.preventDefault()"
+               @click="$refs.imageInput.click()">
+            <p>Drag & Drop your image here or Click to upload</p>
+            <input type="file"
+                   class="hidden"
+                   x-ref="imageInput"
+                   @change="onImageUpload($event)"
+                   accept="image/*">
+        </label>
+        <div x-show="imageUrl" class="flex flex-col gap-4 px-8">
+            <img :src="imageUrl" class="h-80 w-full object-contain">
+            <div>
+                <label for="title-input"
+                       class="block mb-2 text-sm font-medium text-zinc-900 dark:text-white">Title</label>
+                <input type="text"
+                       id="title-input"
+                       class="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                       required />
+            </div>
+            <div>
+                <label for="artist-input"
+                       class="block mb-2 text-sm font-medium text-zinc-900 dark:text-white">Artist</label>
+                <input type="text"
+                       id="artist-input"
+                       class="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
+            </div>
+            <div class="flex items-center">
+                <input id="dark-checkbox"
+                       type="checkbox"
+                       value=""
+                       class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
+                <label for="dark-checkbox"
+                       class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Use dark background</label>
+            </div>
+            <button id="upload-button"
+                    class="rounded-md p-3 text-white bg-blue-600 hover:bg-blue-700">Upload</button>
+        </div>
+    </form>
+    <script>
+  function onImageUpload(event) {
+    console.log("upload");
+    const file = event.target.files[0];
+    this.imageUrl = URL.createObjectURL(file);
+  }
+    </script>
 {% endblock %}
