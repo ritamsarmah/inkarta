@@ -1,7 +1,7 @@
 use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
-use axum::Router;
+use axum::{extract::DefaultBodyLimit, Router};
 use minijinja_autoreload::AutoReloader;
 use server::{db, routes, state::AppState};
 use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
@@ -25,6 +25,7 @@ async fn main() -> Result<()> {
         .merge(routes::image::router())
         .merge(routes::setting::router())
         .merge(routes::ui::router())
+        .layer(DefaultBodyLimit::disable()) // Disable body limit to allow large image uploads
         .with_state(state);
 
     let listener = TcpListener::bind(format!("0.0.0.0:{TCP_PORT}")).await?;

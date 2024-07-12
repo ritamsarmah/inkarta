@@ -13,6 +13,7 @@ use image::{
     load_from_memory, DynamicImage, ImageFormat,
 };
 use serde::Deserialize;
+use tracing::{event, Level};
 
 use crate::{db, model::Identifier, state::AppState, utils};
 
@@ -66,13 +67,21 @@ async fn create_image(
             "title" => title = field.text().await.ok(),
             "artist" => artist = field.text().await.ok(),
             "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
-            "file" => {
-                if let Ok(bytes) = field.bytes().await {
-                    let img = load_from_memory(&bytes).unwrap();
-                    img.write_to(&mut Cursor::new(&mut bitmap), ImageFormat::Bmp);
-                    // TODO: Implement black and white conversion
-                    // TODO: Implement failure handling
+            "image" => {
+                let data = field.bytes().await.unwrap();
+                let img = load_from_memory(&data).unwrap();
+                match img.write_to(&mut Cursor::new(&mut bitmap), ImageFormat::Bmp) {
+                    Ok(_) => event!(Level::DEBUG, "Generated bitmap from uploaded image"),
+                    Err(error) => {
+                        return utils::handle_error(
+                            anyhow!("Failed to generate bitmap from uploaded image: {}", error),
+                            StatusCode::INTERNAL_SERVER_ERROR,
+                        )
+                        .into_response();
+                    }
                 }
+
+                // TODO: Implement black and white conversion
             }
             _ => {}
         };
@@ -102,11 +111,13 @@ async fn create_image(
             thumbnail_bytes,
         )
         .await;
-        Redirect::to("/")
+
+        Redirect::to("/").into_response()
     } else {
         utils::handle_error(
             anyhow!("Failed to parse image upload form"),
             StatusCode::BAD_REQUEST,
         )
+        .into_response()
     }
 }
