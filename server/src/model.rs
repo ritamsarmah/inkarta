@@ -7,7 +7,7 @@ pub struct Image {
     pub id: Identifier,
     pub title: String,
     pub artist: String,
-    pub background: String,
+    pub background: u8, // luma intensity value
     pub data: Vec<u8>,
     pub thumbnail: Vec<u8>,
 }

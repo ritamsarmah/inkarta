@@ -2,14 +2,16 @@ use std::io::Cursor;
 
 use anyhow::{anyhow, Context, Result};
 use axum::{
-    body::Bytes,
+    body::{Body, Bytes},
     extract::{Multipart, Path, Query, State},
-    http::StatusCode,
+    http::{header, Response, StatusCode},
     response::{IntoResponse, Redirect},
-    routing::{delete, get, post},
+    routing::{get, post},
     Router,
 };
-use image::{imageops::*, load_from_memory, DynamicImage, ImageFormat};
+use image::{
+    imageops::*, load_from_memory, DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Luma,
+};
 use serde::Deserialize;
 use tracing::{event, Level};
 
@@ -36,10 +38,40 @@ async fn get_image(
     Query(query): Query<FetchImageQuery>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    // 1. Retrieve image from database
-    // 2. Scale to width and height
-    // 3. Return raw image
-    todo!()
+    match db::get_image(&state.pool, id).await {
+        Ok(image) => {
+            let mut buffer = Cursor::new(Vec::new());
+            let bmp = load_from_memory(&image.data).unwrap();
+
+            if let (Some(width), Some(height)) = (query.width, query.height) {
+                event!(
+                    Level::DEBUG,
+                    "Returning image resized to {width} x {height}"
+                );
+
+                let resized = bmp.resize(width, height, FilterType::Lanczos3);
+
+                let background = ImageBuffer::from_pixel(width, height, Luma([image.background]));
+                let mut composite = DynamicImage::ImageLuma8(background);
+
+                let (new_width, new_height) = resized.dimensions();
+                let x_offset = (width - new_width) / 2;
+                let y_offset = (height - new_height) / 2;
+
+                overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
+                composite.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
+            } else {
+                event!(Level::DEBUG, "Returning full-sized image");
+                bmp.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
+            }
+
+            Response::builder()
+                .header(header::CONTENT_TYPE, "image/bmp")
+                .body(Body::from(buffer.into_inner()))
+                .unwrap()
+        }
+        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+    }
 }
 
 /// Deletes image with specified identifier
@@ -92,7 +124,7 @@ async fn create_image(
     }
 
     if let (Some(title), Some(artist)) = (title, artist) {
-        let background = if dark { "#000000" } else { "#FFFFFF" };
+        let background: u8 = if dark { 0 } else { 255 };
 
         match db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail).await {
             Ok(_) => event!(
@@ -123,18 +155,16 @@ fn process_image(
     // Create main bitmap image
     let mut bmp = load_from_memory(data)
         .context("Failed to load image data")?
-        .grayscale();
-    let bmp = bmp
-        .as_mut_luma8()
-        .context("Failed to convert bitmap to 8-bit grayscale")?;
+        .grayscale()
+        .to_luma8();
 
-    dither(bmp, &BiLevel);
-
-    // Create thumbnail image
-    let thumbnail = resize(bmp, THUMBNAIL_SIZE, THUMBNAIL_SIZE, FilterType::Lanczos3);
+    dither(&mut bmp, &BiLevel);
 
     let mut cursor = Cursor::new(bmp_buffer);
     bmp.write_to(&mut cursor, ImageFormat::Bmp)?;
+
+    // Create thumbnail image
+    let thumbnail = DynamicImage::ImageLuma8(bmp).thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
 
     let mut cursor = Cursor::new(thumbnail_buffer);
     thumbnail.write_to(&mut cursor, ImageFormat::Jpeg)?;

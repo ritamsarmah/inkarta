@@ -9,7 +9,7 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
             id integer primary key autoincrement,
             title text not null,
             artist text,
-            background text not null,
+            background integer not null,
             data blob not null,
             thumbnail blob not null
         );",
@@ -24,17 +24,17 @@ pub async fn create_image(
     pool: &Pool<Sqlite>,
     title: &str,
     artist: &str,
-    background: &str,
+    background: u8,
     data: Vec<u8>,
     thumbnail: Vec<u8>,
-) -> Result<Image> {
+) -> Result<()> {
     let query = "
         insert into images (title, artist, background, data, thumbnail)
         values (?, ?, ?, ?, ?)
         returning id, title, artist, background, data, thumbnail
     ";
 
-    let row = sqlx::query_as::<_, Image>(query)
+    sqlx::query_as::<_, Image>(query)
         .bind(title.trim())
         .bind(artist.trim())
         .bind(background)
@@ -43,7 +43,7 @@ pub async fn create_image(
         .fetch_one(pool)
         .await?;
 
-    Ok(row)
+    Ok(())
 }
 
 pub async fn get_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<Image> {
