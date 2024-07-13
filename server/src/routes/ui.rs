@@ -61,7 +61,7 @@ async fn gallery(State(state): State<AppState>) -> impl IntoResponse {
 
             Html(html).into_response()
         }
-        Err(error) => utils::handle_error(error, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
     }
 }
 
@@ -109,7 +109,7 @@ async fn partial_image(
 
             Html(html).into_response()
         }
-        Err(error) => utils::handle_error(error, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
     }
 }
 
