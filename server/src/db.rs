@@ -1,7 +1,7 @@
 use anyhow::Result;
 use sqlx::{sqlite::SqliteQueryResult, Pool, Sqlite};
 
-use crate::model::{Identifier, Image, Thumbnail};
+use crate::model::{Frame, Identifier, Image, Thumbnail};
 
 pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
     let result = sqlx::query(
@@ -12,13 +12,24 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
             background integer not null,
             data blob not null,
             thumbnail blob not null
-        );",
+        );
+
+        create table if not exists frame (
+            name text not null,
+            next integer,
+            current integer,
+            foreign key(next) references images(id),
+            foreign key(current) references images(id)
+        );
+        ",
     )
     .execute(pool)
     .await?;
 
     Ok(result)
 }
+
+/* Images */
 
 pub async fn create_image(
     pool: &Pool<Sqlite>,
@@ -31,16 +42,15 @@ pub async fn create_image(
     let query = "
         insert into images (title, artist, background, data, thumbnail)
         values (?, ?, ?, ?, ?)
-        returning id, title, artist, background, data, thumbnail
     ";
 
-    sqlx::query_as::<_, Image>(query)
+    sqlx::query(query)
         .bind(title.trim())
         .bind(artist.trim())
         .bind(background)
         .bind(data)
         .bind(thumbnail)
-        .fetch_one(pool)
+        .execute(pool)
         .await?;
 
     Ok(())
@@ -63,10 +73,37 @@ pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Result<Vec<Thumbnail>> {
     Ok(thumbnails)
 }
 
-// pub async fn update_image(pool: &Pool<Sqlite>, id: Identifier, image: Image) -> Result<Image> {
-
 pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
     sqlx::query("delete from images where id = ?")
+        .bind(id)
+        .execute(pool)
+        .await?;
+
+    Ok(())
+}
+
+/* Frame */
+
+pub async fn register_frame(pool: &Pool<Sqlite>, name: &str) -> Result<()> {
+    let query = "
+        insert or replace into frame (name)
+        values (?)
+    ";
+
+    sqlx::query(query).bind(name).execute(pool).await?;
+
+    Ok(())
+}
+
+pub async fn get_frame(pool: &Pool<Sqlite>) -> Option<Frame> {
+    sqlx::query_as("select * from frame")
+        .fetch_one(pool)
+        .await
+        .ok()
+}
+
+pub async fn update_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
+    sqlx::query("update frame set next = ?")
         .bind(id)
         .execute(pool)
         .await?;

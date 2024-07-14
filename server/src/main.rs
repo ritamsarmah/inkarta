@@ -22,8 +22,8 @@ async fn main() -> Result<()> {
     };
 
     let app = Router::new()
+        .merge(routes::frame::router())
         .merge(routes::image::router())
-        .merge(routes::setting::router())
         .merge(routes::ui::router())
         .layer(DefaultBodyLimit::disable()) // Disable body limit to allow large image uploads
         .with_state(state);

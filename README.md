@@ -20,9 +20,9 @@ This repository includes two parts for a wirelessly configurable e-ink picture f
     - Select the correct board (currently only tested on Inkplate10)
     - Select the correct port
     - Select upload speed of 115200
-  
+
 2. Create `inkplate/secrets.h` with your Wi-Fi credentials:
-  
+
     ```c
     const char *ssid = "YOUR_WIFI_SSID";
     const char *password = "YOUR_WIFI_PASSWORD";

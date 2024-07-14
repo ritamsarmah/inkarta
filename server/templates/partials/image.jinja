@@ -1,8 +1,10 @@
 {% extends "modal.jinja" %}
 {% block modal %}
-    <img class="size-64 object-contain" src="{{ image.src }}" />
+<div class="flex items-center space-x-4 p-4 bg-white rounded-lg shadow-md">
+    <img class="w-16 h-16 object-contain rounded-full border-2 border-gray-300" src="{{ image.src }}" alt="{{ image.title }}">
     <div>
-        <p class="font-medium">{{ image.title }}</p>
-        <p class="font-light text-zinc-500">{{ image.artist }}</p>
+        <p class="font-medium text-lg text-gray-900">{{ image.title }}</p>
+        <p class="font-light text-gray-500">{{ image.artist }}</p>
     </div>
+</div>
 {% endblock %}

@@ -1,0 +1,10 @@
+{% extends "modal.jinja" %}
+{% block modal %}
+{% if devices|length == 0 %}
+  <p>No frames registered</p>
+{% else %}
+  <h1>{{ device.name }}</h1>
+  <p>{{ device.current }}/p>
+  <p>{{ device.next }}/p>
+{% endif %}
+{% endblock %}

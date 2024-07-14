@@ -1,10 +1,9 @@
 use anyhow::Error;
 use axum::{http::StatusCode, response::Redirect};
-use tracing::{event, Level};
+use tracing::error;
 
 pub fn redirect_error(err: Error, status: StatusCode) -> Redirect {
-    event!(Level::ERROR, "{err}");
-    // TODO: Add error to tracing
+    error!("{err}");
     // Redirect::to(format!("/r").as_ref())
     Redirect::to("/")
 }

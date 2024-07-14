@@ -12,7 +12,7 @@ use serde::Serialize;
 use crate::{db, model::Identifier, state::AppState, utils};
 
 #[derive(Serialize)]
-struct TemplateThumbnail {
+struct JinjaThumbnail {
     title: String,
     artist: String,
     href: String,
@@ -20,18 +20,25 @@ struct TemplateThumbnail {
 }
 
 #[derive(Serialize)]
-struct TemplateImage {
+struct JinjaImage {
     id: Identifier,
     title: String,
     artist: String,
     src: String,
 }
 
+#[derive(Serialize)]
+struct JinjaFrame {
+    name: String,
+    next: String,
+    current: String,
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(gallery))
         .route("/x/upload", get(partial_upload))
-        .route("/x/settings", get(partial_settings))
+        .route("/x/frame", get(partial_frame))
         .route("/x/image/:id", get(partial_image))
         .fallback(not_found)
 }
@@ -42,9 +49,9 @@ async fn gallery(State(state): State<AppState>) -> impl IntoResponse {
         Ok(thumbnails) => {
             let env = state.reloader.acquire_env().unwrap();
             let template = env.get_template("index.jinja").unwrap();
-            let thumbnails: Vec<TemplateThumbnail> = thumbnails
+            let thumbnails: Vec<JinjaThumbnail> = thumbnails
                 .into_iter()
-                .map(|thumbnail| TemplateThumbnail {
+                .map(|thumbnail| JinjaThumbnail {
                     title: thumbnail.title,
                     artist: thumbnail.artist,
                     href: format!("/x/image/{}", thumbnail.id),
@@ -82,10 +89,28 @@ async fn partial_upload(State(state): State<AppState>) -> impl IntoResponse {
     Html(html).into_response()
 }
 
-async fn partial_settings(State(state): State<AppState>) -> impl IntoResponse {
+async fn partial_frame(State(state): State<AppState>) -> impl IntoResponse {
+    let context = db::get_frame(&state.pool).await.map_or_else(
+        || context!(frame => ()),
+        |frame| {
+            let frame = JinjaFrame {
+                name: frame.name,
+                next: frame.next.map_or_else(
+                    || "Next image has not been selected".to_string(),
+                    |x| x.to_string(),
+                ),
+                current: frame.current.map_or_else(
+                    || "No image currently showing".to_string(),
+                    |x| x.to_string(),
+                ),
+            };
+            context!(frame => frame)
+        },
+    );
+
     let env = state.reloader.acquire_env().unwrap();
-    let template = env.get_template("partials/settings.jinja").unwrap();
-    let html = template.render(()).unwrap();
+    let template = env.get_template("partials/frame.jinja").unwrap();
+    let html = template.render(context).unwrap();
 
     Html(html).into_response()
 }
@@ -96,7 +121,7 @@ async fn partial_image(
 ) -> impl IntoResponse {
     match db::get_image(&state.pool, id).await {
         Ok(image) => {
-            let image = TemplateImage {
+            let image = JinjaImage {
                 id: image.id,
                 title: image.title,
                 artist: image.artist,

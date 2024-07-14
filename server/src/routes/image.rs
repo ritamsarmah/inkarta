@@ -13,14 +13,14 @@ use image::{
     imageops::*, load_from_memory, DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Luma,
 };
 use serde::Deserialize;
-use tracing::{event, Level};
+use tracing::debug;
 
 use crate::{db, model::Identifier, state::AppState, utils};
 
 const THUMBNAIL_SIZE: u32 = 512;
 
 #[derive(Deserialize)]
-struct FetchImageQuery {
+struct FetchImageParams {
     width: Option<u32>,
     height: Option<u32>,
 }
@@ -35,7 +35,7 @@ pub fn router() -> Router<AppState> {
 /// Gets raw image data scaled to an optional height and width
 async fn get_image(
     Path(id): Path<Identifier>,
-    Query(query): Query<FetchImageQuery>,
+    Query(query): Query<FetchImageParams>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     match db::get_image(&state.pool, id).await {
@@ -44,10 +44,7 @@ async fn get_image(
             let bmp = load_from_memory(&image.data).unwrap();
 
             if let (Some(width), Some(height)) = (query.width, query.height) {
-                event!(
-                    Level::DEBUG,
-                    "Returning image resized to {width} x {height}"
-                );
+                debug!("Returning image resized to {width} x {height}");
 
                 let resized = bmp.resize(width, height, FilterType::Lanczos3);
 
@@ -61,7 +58,7 @@ async fn get_image(
                 overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
                 composite.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
             } else {
-                event!(Level::DEBUG, "Returning full-sized image");
+                debug!("Returning full-sized image");
                 bmp.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
             }
 
@@ -105,7 +102,7 @@ async fn create_image(
             "image" => {
                 if let Ok(data) = field.bytes().await {
                     match process_image(&data, &mut bitmap, &mut thumbnail) {
-                        Ok(_) => event!(Level::DEBUG, "Processed bitmap image successfully"),
+                        Ok(_) => debug!("Processed bitmap image successfully"),
                         Err(err) => {
                             return utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
                                 .into_response()
@@ -127,10 +124,7 @@ async fn create_image(
         let background: u8 = if dark { 0 } else { 255 };
 
         match db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail).await {
-            Ok(_) => event!(
-                Level::DEBUG,
-                "Created new image with title ({title}) and artist ({artist})"
-            ),
+            Ok(_) => debug!("Created new image with title ({title}) and artist ({artist})"),
             Err(err) => {
                 return utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
                     .into_response()
