@@ -14,7 +14,7 @@ use crate::{db, model::Identifier, state::AppState};
 
 #[derive(Deserialize)]
 pub struct DeviceParams {
-    device_name: String,
+    name: String,
 }
 
 #[derive(Deserialize)]
@@ -34,13 +34,10 @@ async fn register_device(
     State(state): State<AppState>,
     params: Query<DeviceParams>,
 ) -> impl IntoResponse {
-    let name = &params.device_name;
+    let name = &params.name;
 
-    if let Some(frame) = db::get_frame(&state.pool).await {
-        debug!("Found existing frame {frame:?}");
-    } else {
-        debug!("Registering new frame named: {name}");
-    }
+    debug!("Initializing frame named: {name}");
+    db::register_frame(&state.pool, name).await.unwrap();
 
     // Return current time for device's RTC
     SystemTime::now()

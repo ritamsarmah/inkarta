@@ -1,10 +1,12 @@
 {% extends "modal.jinja" %}
 {% block modal %}
-{% if devices|length == 0 %}
-  <p>No frames registered</p>
-{% else %}
-  <h1>{{ device.name }}</h1>
-  <p>{{ device.current }}/p>
-  <p>{{ device.next }}/p>
-{% endif %}
+<div class="flex flex-col items-center gap-4">
+    {% if frame is none %}
+        <p>No frames registered</p>
+    {% else %}
+        <h1 class="text-2xl font-bold">{{ frame.name }}</h1>
+        <p>{{ frame.current }}</p>
+        <p>{{ frame.next }}</p>
+    {% endif %}
+</div>
 {% endblock %}

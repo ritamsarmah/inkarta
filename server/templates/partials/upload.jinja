@@ -8,11 +8,9 @@
           x-data="{ imageUrl: null, isUploading: false, onImageSelected(event) { const file = event.target.files[0]; if (file) { this.imageUrl = URL.createObjectURL(file); } } }">
         <!-- Image Upload Button -->
         <div x-show="!imageUrl"
-             class="border-dashed border-2 rounded-md border-gray-400 p-10 w-full flex justify-center items-center cursor-pointer"
-             @drop.prevent="onImageSelected($event)"
-             @dragover.prevent="$event.preventDefault()"
+             class="rounded-md py-3 px-5 text-white cursor-pointer bg-blue-600 hover:bg-blue-700"
              @click="$refs.imageInput.click()">
-            <p>Drag & drop or click to upload an image</p>
+            <p>Select Image</p>
             <input type="file"
                    class="hidden"
                    x-ref="imageInput"

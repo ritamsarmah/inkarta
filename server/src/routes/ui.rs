@@ -93,6 +93,7 @@ async fn partial_frame(State(state): State<AppState>) -> impl IntoResponse {
     let context = db::get_frame(&state.pool).await.map_or_else(
         || context!(frame => ()),
         |frame| {
+            println!("{frame:?}");
             let frame = JinjaFrame {
                 name: frame.name,
                 next: frame.next.map_or_else(
