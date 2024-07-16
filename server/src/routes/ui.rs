@@ -37,6 +37,7 @@ struct JinjaFrame {
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(gallery))
+        .route("/error/:code", get(error_page))
         .route("/x/upload", get(partial_upload))
         .route("/x/frame", get(partial_frame))
         .route("/x/image/:id", get(partial_image))
@@ -72,10 +73,25 @@ async fn gallery(State(state): State<AppState>) -> impl IntoResponse {
     }
 }
 
+async fn error_page(Path(code): Path<u16>, State(state): State<AppState>) -> impl IntoResponse {
+    let status = StatusCode::from_u16(code).unwrap_or(StatusCode::BAD_REQUEST);
+    let message = status.canonical_reason().unwrap_or("Unknown Error");
+    let code = status.as_u16();
+
+    let env = state.reloader.acquire_env().unwrap();
+    let template = env.get_template("error.jinja").unwrap();
+    let html = template
+        .render(context!(message => message, code => code))
+        .unwrap();
+
+    Html(html)
+}
+
 async fn not_found(State(state): State<AppState>) -> Html<String> {
     let env = state.reloader.acquire_env().unwrap();
     let template = env.get_template("404.jinja").unwrap();
     let html = template.render(()).unwrap();
+
     Html(html)
 }
 
