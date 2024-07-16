@@ -10,7 +10,7 @@ use axum::{
 use serde::Deserialize;
 use tracing::debug;
 
-use crate::{db, model::Identifier, state::AppState};
+use crate::{db, model::Identifier, state::AppState, utils};
 
 #[derive(Deserialize)]
 pub struct DeviceParams {
@@ -36,7 +36,7 @@ async fn register_device(
 ) -> impl IntoResponse {
     let name = &params.name;
 
-    debug!("Initializing frame named: {name}");
+    debug!("Initializing frame: {name}");
     db::register_frame(&state.pool, name).await.unwrap();
 
     // Return current time for device's RTC
@@ -52,7 +52,7 @@ async fn update_next_id(
     params: Query<UpdateNextParams>,
 ) -> impl IntoResponse {
     match db::update_next_id(&state.pool, params.id).await {
-        Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR,
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
     };
 }

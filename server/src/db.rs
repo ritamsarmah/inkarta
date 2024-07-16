@@ -1,4 +1,5 @@
-use anyhow::Result;
+use anyhow::{Context, Result};
+use sqlx::Row;
 use sqlx::{sqlite::SqliteQueryResult, Pool, Sqlite};
 
 use crate::model::{Frame, Identifier, Image, Thumbnail};
@@ -65,6 +66,14 @@ pub async fn get_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<Image> {
     Ok(image)
 }
 
+pub async fn get_random_id(pool: &Pool<Sqlite>) -> Result<Identifier> {
+    sqlx::query("select id from images order by random() limit 1")
+        .fetch_one(pool)
+        .await?
+        .try_get("id")
+        .context("Failed to retrieve random image identifier")
+}
+
 pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Result<Vec<Thumbnail>> {
     let thumbnails = sqlx::query_as("select id, title, artist, thumbnail from images")
         .fetch_all(pool)
@@ -85,6 +94,7 @@ pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
 /* Frame */
 
 pub async fn register_frame(pool: &Pool<Sqlite>, name: &str) -> Result<()> {
+    // NOTE: Currently only supports single frame registered to server
     let query = "
         insert or replace into frame (name)
         values (?)
@@ -100,6 +110,30 @@ pub async fn get_frame(pool: &Pool<Sqlite>) -> Option<Frame> {
         .fetch_one(pool)
         .await
         .ok()
+}
+
+pub async fn get_next_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
+    sqlx::query_as("select * from frame")
+        .fetch_one(pool)
+        .await
+        .ok()
+        .and_then(|frame: Frame| frame.next)
+}
+
+pub async fn set_next_to_current(pool: &Pool<Sqlite>) -> Result<()> {
+    // Update current column value using next
+    sqlx::query("update frame set current = next")
+        .execute(pool)
+        .await?;
+
+    // Update next column to random id
+    let next = get_random_id(pool).await?;
+    sqlx::query("update frame set next = ?")
+        .bind(next)
+        .execute(pool)
+        .await?;
+
+    Ok(())
 }
 
 pub async fn update_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {

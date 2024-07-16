@@ -25,11 +25,16 @@ struct FetchImageParams {
     height: Option<u32>,
 }
 
+#[derive(Deserialize)]
+struct SetNextParams {
+    id: Identifier,
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/image", post(create_image))
         .route("/image/:id", get(get_image).delete(delete_image))
-        .route("/image/next", get(get_next_image))
+        .route("/image/next", get(get_next_image).put(set_next_id))
 }
 
 /// Gets raw image data scaled to an optional height and width
@@ -79,8 +84,53 @@ async fn delete_image(Path(id): Path<Identifier>, State(state): State<AppState>)
     }
 }
 
-async fn get_next_image() -> impl IntoResponse {
-    todo!()
+/// Get next image for frame
+async fn get_next_image(
+    Query(query): Query<FetchImageParams>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    fn handle_error(err: anyhow::Error) -> Redirect {
+        utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
+    }
+
+    if let Some(next_id) = db::get_next_id(&state.pool).await {
+        // Update the current and next id in database
+        match db::set_next_to_current(&state.pool).await {
+            Ok(_) => {
+                // Return the next image
+                get_image(Path(next_id), Query(query), State(state))
+                    .await
+                    .into_response()
+            }
+            Err(err) => handle_error(err).into_response(),
+        }
+    } else {
+        match db::get_random_id(&state.pool).await {
+            Ok(next_id) => {
+                // Images exist, but were not set for frame (or frame not registered)
+                match db::update_next_id(&state.pool, next_id).await {
+                    Ok(_) => {
+                        // Return the next image
+                        get_image(Path(next_id), Query(query), State(state))
+                            .await
+                            .into_response()
+                    }
+                    Err(err) => handle_error(err).into_response(),
+                }
+            }
+            Err(err) => handle_error(err).into_response(),
+        }
+    }
+}
+
+async fn set_next_id(
+    Query(query): Query<SetNextParams>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    match db::update_next_id(&state.pool, query.id).await {
+        Ok(_) => StatusCode::OK.into_response(),
+        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+    }
 }
 
 async fn create_image(
