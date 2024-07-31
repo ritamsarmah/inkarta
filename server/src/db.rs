@@ -113,25 +113,16 @@ pub async fn get_frame(pool: &Pool<Sqlite>) -> Option<Frame> {
 }
 
 pub async fn get_next_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
-    sqlx::query_as("select * from frame")
-        .fetch_one(pool)
-        .await
-        .ok()
-        .and_then(|frame: Frame| frame.next)
+    get_frame(pool).await.and_then(|frame| frame.next)
 }
 
-pub async fn set_next_to_current(pool: &Pool<Sqlite>) -> Result<()> {
+pub async fn set_current_to_next(pool: &Pool<Sqlite>) -> Result<()> {
     // Update current column value using next
     sqlx::query("update frame set current = next")
         .execute(pool)
         .await?;
 
-    // Update next column to random id
-    let next = get_random_id(pool).await?;
-    sqlx::query("update frame set next = ?")
-        .bind(next)
-        .execute(pool)
-        .await?;
+    update_random_next_id(pool).await?;
 
     Ok(())
 }
@@ -141,6 +132,13 @@ pub async fn update_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
         .bind(id)
         .execute(pool)
         .await?;
+
+    Ok(())
+}
+
+pub async fn update_random_next_id(pool: &Pool<Sqlite>) -> Result<()> {
+    let next = get_random_id(pool).await?;
+    update_next_id(pool, next).await?;
 
     Ok(())
 }

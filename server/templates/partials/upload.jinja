@@ -10,7 +10,7 @@
         <div x-show="!imageUrl"
              class="rounded-md py-3 px-5 text-white cursor-pointer bg-blue-600 hover:bg-blue-700"
              @click="$refs.imageInput.click()">
-            <p>Select Image</p>
+            <p>Upload Image</p>
             <input type="file"
                    class="hidden"
                    x-ref="imageInput"
@@ -51,7 +51,7 @@
                     type="submit"
                     :disabled="isUploading"
                     x-text="isUploading ? 'Uploading...' : 'Upload'"
-                    class="rounded-md p-3 text-white bg-blue-600 hover:bg-blue-700"></button>
+                    class="rounded-md py-3 px-5 text-white bg-blue-600 hover:bg-blue-700"></button>
         </div>
     </form>
 {% endblock %}

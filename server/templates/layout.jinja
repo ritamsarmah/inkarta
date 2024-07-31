@@ -7,13 +7,63 @@
         <title>
             {% block title %}{% endblock %}
         </title>
-        <script defer
-                src="https://cdn.jsdelivr.net/npm/@imacrayon/alpine-ajax@0.7.0/dist/cdn.min.js"></script>
-        <script defer
-                src="https://cdn.jsdelivr.net/npm/alpinejs@3.11.1/dist/cdn.min.js"></script>
-        {% if debug %}<script src="https://cdn.tailwindcss.com"></script>{% endif %}
+        <script src="https://unpkg.com/htmx.org@2.0.1"></script>
+        <script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
+        <script>
+        // Based on https://github.com/gnat/css-scope-inline
+        window.cssScopeCount ??= 1 // Let extra copies share the scope count.
+        window.cssScope ??= new MutationObserver(mutations => { // Allow 1 observer.
+            document?.body?.querySelectorAll('style:not([ready])').forEach(node => { // Faster than walking MutationObserver results when recieving subtree (DOM swap, htmx, ajax, jquery).
+                var scope = 'me__'+(window.cssScopeCount++) // Ready. Make unique scope, example: .me__1234
+                node.parentNode.classList.add(scope)
+                node.textContent = node.textContent
+                    .replace(/(?:^|\.|(\s|[^a-zA-Z0-9\-\_]))(me|this|self)(?![a-zA-Z])/g, '$1.'+scope) // Can use: me this self
+                    .replace(/((@keyframes|animation:|animation-name:)[^{};]*)\.me__/g, '$1me__') // Removes need to escape names, ex: "\.me"
+                    .replace(/(?:@media)\sdark/g, () => '@media (prefers-color-scheme: dark)') // Dark mode.
+                    .replace(/(?:@media)\s(xs-|sm-|md-|lg-|xl-|sm|md|lg|xl|xx)/g, // Responsive design. Mobile First (above breakpoint): 🟢 None sm md lg xl xx 🏁  Desktop First (below breakpoint): 🏁 xs- sm- md- lg- xl- None 🟢 *- matches must be first!
+                        (match, part1) => { return '@media '+({'sm':'(min-width: 640px)','md':'(min-width: 768px)', 'lg':'(min-width: 1024px)', 'xl':'(min-width: 1280px)', 'xx':'(min-width: 1536px)', 'xs-':'(max-width: 639px)', 'sm-':'(max-width: 767px)', 'md-':'(max-width: 1023px)', 'lg-':'(max-width: 1279px)', 'xl-':'(max-width: 1535px)'}[part1]) }
+                    )
+                node.setAttribute('ready', '')
+            })
+        }).observe(document.documentElement, {childList: true, subtree: true})
+        </script>
+        <style>
+            :root {
+                --gray-50: rgb(250 250 250);
+                --gray-100: rgb(244 244 245);
+                --gray-200: rgb(228 228 231);
+                --gray-300: rgb(212 212 216);
+                --gray-400: rgb(161 161 170);
+                --gray-500: rgb(113 113 122);
+                --gray-600: rgb(82 82 91);
+                --gray-700: rgb(63 63 70);
+                --gray-800: rgb(39 39 42);
+                --gray-900: rgb(24 24 27);
+            }
+
+            /* CSS Reset */
+            *, *::before, *::after { box-sizing: border-box; }
+            * { margin: 0; }
+            body { -webkit-font-smoothing: antialiased; }
+            img, picture, video, canvas, svg { display: block; max-width: 100%; }
+            input, button, textarea, select { font: inherit; }
+            p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+            #root, #__next { isolation: isolate; }
+        </style>
     </head>
-    <body class="p-4 md:p-8 mx-auto font-sans bg-white dark:bg-zinc-950 max-w-7xl">
+    <body>
+        <style>
+            me {
+                padding: 1rem;
+                margin: 0 auto;
+                font-family: sans-serif;
+                background-color: white;
+                max-width: 80rem;
+            }
+
+            @media md { me { padding: 2rem; } }
+            @media dark { me { background-color: var(--gray-900) } }
+        </style>
         {% block body %}{% endblock %}
     </body>
 </html>

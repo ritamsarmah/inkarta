@@ -38,9 +38,9 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .route("/", get(gallery))
         .route("/error/:code", get(error_page))
-        .route("/x/upload", get(partial_upload))
-        .route("/x/frame", get(partial_frame))
-        .route("/x/image/:id", get(partial_image))
+        .route("/ui/upload", get(partial_upload))
+        .route("/ui/frame", get(partial_frame))
+        .route("/ui/image/:id", get(partial_image))
         .fallback(not_found)
 }
 
@@ -55,7 +55,7 @@ async fn gallery(State(state): State<AppState>) -> impl IntoResponse {
                 .map(|thumbnail| JinjaThumbnail {
                     title: thumbnail.title,
                     artist: thumbnail.artist,
-                    href: format!("/x/image/{}", thumbnail.id),
+                    href: format!("/ui/image/{}", thumbnail.id),
                     src: to_src(thumbnail.thumbnail),
                 })
                 .collect();
@@ -63,7 +63,6 @@ async fn gallery(State(state): State<AppState>) -> impl IntoResponse {
             let html = template
                 .render(context! {
                     thumbnails => thumbnails,
-                    debug => cfg!(debug_assertions),
                 })
                 .unwrap();
 
@@ -109,7 +108,6 @@ async fn partial_frame(State(state): State<AppState>) -> impl IntoResponse {
     let context = db::get_frame(&state.pool).await.map_or_else(
         || context!(frame => ()),
         |frame| {
-            println!("{frame:?}");
             let frame = JinjaFrame {
                 name: frame.name,
                 next: frame.next.map_or_else(

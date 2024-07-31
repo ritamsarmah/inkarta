@@ -1,56 +1,77 @@
 {% extends "layout.jinja" %}
 {% block body %}
-    <div x-data="{ modal: false }" x-effect="if (!modal) { $refs.modal.innerHTML = '' }">
-        <div x-show="!modal">
-            <nav class="flex gap-8 items-center justify-between"
-                 @ajax:before="modal = true">
-                <!-- Frame Button -->
-                <a href="/x/frame"
-                   x-target="modal"
-                   @click="modal = true"
-                   class="flex items-center justify-center size-10 text-black dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
-                      <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 0 1-1.125-1.125v-3.75ZM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 0 1-1.125-1.125v-8.25ZM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 0 1-1.125-1.125v-2.25Z" />
-                    </svg>
-                </a>
-                <!-- Title -->
-                <h1 class="text-2xl font-medium tracking-[0.3rem] uppercase pt-0.5">Gallery</h1>
-                <!-- Add Button -->
-                <a href="/x/upload"
-                   x-target="modal"
-                   class="flex items-center justify-center size-10 text-black cursor-pointer dark:text-white rounded-full hover:bg-zinc-100 hover:dark:bg-zinc-900">
-                    <svg xmlns="http://www.w3.org/2000/svg"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke-width="1.5"
-                         stroke="currentColor"
-                         class="size-6">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                    </svg>
-                </a>
-            </nav>
-            <!-- Image Gallery -->
-            <main class="mt-8">
-                <div class="grid grid-cols sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {% for thumbnail in thumbnails %}
-                        <a href="{{ thumbnail.href }}"
-                           x-target="modal"
-                           @click="modal = true"
-                           class="space-y-3 p-4 items-center justify-center text-center rounded-md hover:bg-zinc-100 hover:dark:bg-zinc-900 cursor-pointer flex flex-col">
-                            <img class="size-64 object-contain" src="{{ thumbnail.src }}" />
-                            <div>
-                                <p class="font-medium">{{ thumbnail.title }}</p>
-                                <p class="font-light text-zinc-500">{{ thumbnail.artist }}</p>
-                            </div>
-                        </a>
-                    {% endfor %}
-                </div>
-            </main>
-        </div>
-        <!-- Modal Dialog -->
-        <div x-show="modal"
-             class="fixed top-0 left-0 flex flex-col items-center justify-center w-full h-full bg-white dark:bg-zinc-800">
-            <div id="modal" x-ref="modal"></div>
-        </div>
+    <div>
+        <nav>
+            <style>
+                me { display: flex; gap: 2rem; align-items: center; justify-content: space-between; }
+
+                me button { all: unset; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; color: black; border-radius: 50%; padding: 0.25rem; cursor: pointer; }
+                me button:hover { background-color: var(--gray-100); }
+
+                me button svg { width: 1.5rem; height: 1.5rem; }
+
+                me h1 { font-size: 1.5rem; font-weight: 300; line-height: 2rem; letter-spacing: 0.3rem; text-transform: uppercase; padding-top: 0.125rem; }
+
+                @media dark {
+                    me button { color: white; }
+                    me button:hover { background-color: var(--gray-800); }
+                }
+            </style>
+            <!-- Frame Configuration Button -->
+            <button hx-get="/ui/frame" hx-target="body" hx-swap="beforeend">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.5"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 0 1-1.125-1.125v-3.75ZM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 0 1-1.125-1.125v-8.25ZM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 0 1-1.125-1.125v-2.25Z" />
+                </svg>
+            </button>
+            <!-- Title -->
+            <h1>Gallery</h1>
+            <!-- Upload Image Button -->
+            <button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.5"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+            </button>
+        </nav>
+        <!-- Image Gallery -->
+        <main>
+            <style>
+                me { margin-top: 2rem; }
+
+                me #gallery { display: grid; gap: 1rem; }
+                @media sm { me #gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+                @media md { me #gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+                @media lg { me #gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+
+                me .thumbnail { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem; border-radius: 0.375rem; cursor: pointer; text-decoration: none; color: var(--gray-900); }
+                me .thumbnail > * + * { margin-top: 0.75rem; }
+                @media dark { me .thumbnail { color: white; }}
+
+                me .thumbnail:hover { background-color: var(--gray-100); }
+                @media dark { me .thumbnail:hover { background-color: var(--gray-800); } }
+
+                me .thumbnail img { width: 16rem; height: 16rem; object-fit: contain; }
+                me p[n1] { font-weight: 500; margin-bottom: 0.25rem; }
+                me p[n2] { font-weight: 300; color: var(--gray-500); }
+            </style>
+            <div id="gallery">
+                {% for thumbnail in thumbnails %}
+                    <a href="{{ thumbnail.href }}" class="thumbnail">
+                        <img src="{{ thumbnail.src }}" />
+                        <div>
+                            <p n1>{{ thumbnail.title }}</p>
+                            <p n2>{{ thumbnail.artist }}</p>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        </main>
     </div>
 {% endblock %}

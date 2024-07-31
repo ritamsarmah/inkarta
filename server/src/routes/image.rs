@@ -78,13 +78,25 @@ async fn get_image(
 
 /// Deletes image with specified identifier
 async fn delete_image(Path(id): Path<Identifier>, State(state): State<AppState>) -> Redirect {
-    match db::delete_image(&state.pool, id).await {
-        Ok(_) => Redirect::to("/"),
-        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR),
+    let pool = state.pool;
+
+    if let Err(err) = db::delete_image(&pool, id).await {
+        debug!("Failed to delete image with id: {id}");
+        utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
+    } else {
+        debug!("Successfully delete image with id: {id}");
+        // After deletion, check if the next image was set to the deleted ID and update
+        if let Some(next_id) = db::get_next_id(&pool).await {
+            if next_id == id {
+                let _ = db::update_random_next_id(&pool).await;
+            }
+        }
+
+        Redirect::to("/")
     }
 }
 
-/// Get next image for frame
+/// Get next image for display
 async fn get_next_image(
     Query(query): Query<FetchImageParams>,
     State(state): State<AppState>,
@@ -95,7 +107,7 @@ async fn get_next_image(
 
     if let Some(next_id) = db::get_next_id(&state.pool).await {
         // Update the current and next id in database
-        match db::set_next_to_current(&state.pool).await {
+        match db::set_current_to_next(&state.pool).await {
             Ok(_) => {
                 // Return the next image
                 get_image(Path(next_id), Query(query), State(state))
@@ -105,6 +117,7 @@ async fn get_next_image(
             Err(err) => handle_error(err).into_response(),
         }
     } else {
+        // No next ID set for frame, retrieve a random next ID
         match db::get_random_id(&state.pool).await {
             Ok(next_id) => {
                 // Images exist, but were not set for frame (or frame not registered)
@@ -169,6 +182,8 @@ async fn create_image(
             _ => {}
         };
     }
+
+    // TODO: Store to database in separate thread, but redirect immediately
 
     if let (Some(title), Some(artist)) = (title, artist) {
         let background: u8 = if dark { 0 } else { 255 };
