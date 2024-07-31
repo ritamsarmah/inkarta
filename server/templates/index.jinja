@@ -3,18 +3,18 @@
     <div>
         <nav>
             <style>
-                me { display: flex; gap: 2rem; align-items: center; justify-content: space-between; }
+                me { display:flex; gap:2rem; align-items:center; justify-content:space-between; }
 
-                me button { all: unset; display: flex; align-items: center; justify-content: center; width: 2.5rem; height: 2.5rem; color: black; border-radius: 50%; padding: 0.25rem; cursor: pointer; }
-                me button:hover { background-color: var(--gray-100); }
+                me button { all:unset; display:flex; align-items:center; justify-content:center; width:2.5rem; height:2.5rem; color:black; border-radius:50%; padding:0.25rem; cursor:pointer; }
+                me button:hover { background-color:var(--gray-100); }
 
-                me button svg { width: 1.5rem; height: 1.5rem; }
+                me button svg { width:1.5rem; height:1.5rem; }
 
-                me h1 { font-size: 1.5rem; font-weight: 300; line-height: 2rem; letter-spacing: 0.3rem; text-transform: uppercase; padding-top: 0.125rem; }
+                me h1 { font-size:1.5rem; font-weight:300; line-height:2rem; letter-spacing:0.3rem; text-transform:uppercase; padding-top:0.125rem; }
 
                 @media dark {
-                    me button { color: white; }
-                    me button:hover { background-color: var(--gray-800); }
+                    me button { color:white; }
+                    me button:hover { background-color:var(--gray-800); }
                 }
             </style>
             <!-- Frame Configuration Button -->
@@ -44,26 +44,31 @@
         <main>
             <style>
                 me { margin-top: 2rem; }
-
-                me #gallery { display: grid; gap: 1rem; }
-                @media sm { me #gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-                @media md { me #gallery { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
-                @media lg { me #gallery { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-
-                me .thumbnail { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1rem; border-radius: 0.375rem; cursor: pointer; text-decoration: none; color: var(--gray-900); }
-                me .thumbnail > * + * { margin-top: 0.75rem; }
-                @media dark { me .thumbnail { color: white; }}
-
-                me .thumbnail:hover { background-color: var(--gray-100); }
-                @media dark { me .thumbnail:hover { background-color: var(--gray-800); } }
-
-                me .thumbnail img { width: 16rem; height: 16rem; object-fit: contain; }
-                me p[n1] { font-weight: 500; margin-bottom: 0.25rem; }
-                me p[n2] { font-weight: 300; color: var(--gray-500); }
             </style>
-            <div id="gallery">
+
+            <div>
+                <style>
+                    me { display:grid; gap:1rem; }
+                    @media sm { me { grid-template-columns:repeat(2, minmax(0, 1fr)); } }
+                    @media md { me { grid-template-columns:repeat(3, minmax(0, 1fr)); } }
+                    @media lg { me { grid-template-columns:repeat(4, minmax(0, 1fr)); } }
+                </style>
+
                 {% for thumbnail in thumbnails %}
-                    <a href="{{ thumbnail.href }}" class="thumbnail">
+                    <a href="{{ thumbnail.href }}">
+                        <style>
+                            me { display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:1rem; border-radius:0.375rem; cursor:pointer; text-decoration:none; color:var(--gray-900); }
+                            me > * + * { margin-top:0.75rem; }
+                            @media dark { me { color:white; }}
+
+                            me:hover { background-color:var(--gray-100); }
+                            @media dark { me:hover { background-color:var(--gray-800); } }
+
+                            me img { width:16rem; height:16rem; object-fit:contain; }
+                            me p[n1] { font-weight:500; margin-bottom:0.25rem; }
+                            me p[n2] { font-weight:300; color:var(--gray-400); }
+                        </style>
+
                         <img src="{{ thumbnail.src }}" />
                         <div>
                             <p n1>{{ thumbnail.title }}</p>

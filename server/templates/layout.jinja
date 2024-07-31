@@ -42,27 +42,20 @@
             }
 
             /* CSS Reset */
-            *, *::before, *::after { box-sizing: border-box; }
-            * { margin: 0; }
-            body { -webkit-font-smoothing: antialiased; }
-            img, picture, video, canvas, svg { display: block; max-width: 100%; }
-            input, button, textarea, select { font: inherit; }
-            p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
-            #root, #__next { isolation: isolate; }
+            *, *::before, *::after { box-sizing:border-box; }
+            * { margin:0; }
+            body { -webkit-font-smoothing:antialiased; }
+            img, picture, video, canvas, svg { display:block; max-width:100%; }
+            input, button, textarea, select { font:inherit; }
+            p, h1, h2, h3, h4, h5, h6 { overflow-wrap:break-word; }
+            #root, #__next { isolation:isolate; }
         </style>
     </head>
     <body>
         <style>
-            me {
-                padding: 1rem;
-                margin: 0 auto;
-                font-family: sans-serif;
-                background-color: white;
-                max-width: 80rem;
-            }
-
-            @media md { me { padding: 2rem; } }
-            @media dark { me { background-color: var(--gray-900) } }
+            me { padding:1rem; margin:0 auto; font-family:sans-serif; background-color:white; max-width:80rem; }
+            @media md { me { padding:2rem; } }
+            @media dark { me { background-color:var(--gray-900) } }
         </style>
         {% block body %}{% endblock %}
     </body>
