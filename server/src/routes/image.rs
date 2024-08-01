@@ -4,9 +4,9 @@ use anyhow::{anyhow, Context, Result};
 use axum::{
     body::{Body, Bytes},
     extract::{Multipart, Path, Query, State},
-    http::{header, Response, StatusCode},
+    http::{header, HeaderMap, HeaderValue, Response, StatusCode},
     response::{IntoResponse, Redirect},
-    routing::{get, post},
+    routing::{get, post, put},
     Router,
 };
 use image::{
@@ -15,7 +15,12 @@ use image::{
 use serde::Deserialize;
 use tracing::debug;
 
-use crate::{db, model::Identifier, state::AppState, utils};
+use crate::{
+    db::{self},
+    model::Identifier,
+    state::AppState,
+    utils,
+};
 
 const THUMBNAIL_SIZE: u32 = 512;
 
@@ -25,16 +30,12 @@ struct FetchImageParams {
     height: Option<u32>,
 }
 
-#[derive(Deserialize)]
-struct SetNextParams {
-    id: Identifier,
-}
-
 pub fn router() -> Router<AppState> {
     Router::new()
         .route("/image", post(create_image))
         .route("/image/:id", get(get_image).delete(delete_image))
-        .route("/image/next", get(get_next_image).put(set_next_id))
+        .route("/image/next", get(get_next_image))
+        .route("/image/next/:id", put(set_next_id))
 }
 
 /// Gets raw image data scaled to an optional height and width
@@ -77,12 +78,15 @@ async fn get_image(
 }
 
 /// Deletes image with specified identifier
-async fn delete_image(Path(id): Path<Identifier>, State(state): State<AppState>) -> Redirect {
+async fn delete_image(
+    Path(id): Path<Identifier>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
     let pool = state.pool;
 
     if let Err(err) = db::delete_image(&pool, id).await {
         debug!("Failed to delete image with id: {id}");
-        utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
+        utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response()
     } else {
         debug!("Successfully delete image with id: {id}");
         // After deletion, check if the next image was set to the deleted ID and update
@@ -92,7 +96,9 @@ async fn delete_image(Path(id): Path<Identifier>, State(state): State<AppState>)
             }
         }
 
-        Redirect::to("/")
+        let mut headers = HeaderMap::new();
+        headers.insert("HX-Refresh", HeaderValue::from_static("true"));
+        (StatusCode::OK, headers).into_response()
     }
 }
 
@@ -137,11 +143,11 @@ async fn get_next_image(
 }
 
 async fn set_next_id(
-    Query(query): Query<SetNextParams>,
+    Path(id): Path<Identifier>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    match db::update_next_id(&state.pool, query.id).await {
-        Ok(_) => StatusCode::OK.into_response(),
+    match db::update_next_id(&state.pool, id).await {
+        Ok(_) => "<button disabled>Selected</button>".into_response(),
         Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
     }
 }
