@@ -35,9 +35,8 @@
                     me p[n1] { color: white; }
                 }
             </style>
-
-            <p[n1]>{{ image.title }}</p>
-            <p[n2]>{{ image.artist }}</p>
+            <p [n1]>{{ image.title }}</p>
+            <p [n2]>{{ image.artist }}</p>
         </div>
         <div>
             <style>
@@ -49,7 +48,8 @@
             </style>
             <form method="put" action="/image/next">
                 <input type="hidden" name="id" value="{{ image.id }}">
-                <button id="next-button" class="rounded-md py-3 px-5 text-white bg-blue-600 hover:bg-blue-700">
+                <button id="next-button"
+                        class="rounded-md py-3 px-5 text-white bg-blue-600 hover:bg-blue-700">
                     <style>
                         me {
                           border-radius: 0.375rem;
@@ -63,7 +63,6 @@
 
                         me:hover { background-color: var(--blue-700); }
                     </style>
-
                     Select Image
                 </button>
             </form>

@@ -1,9 +1,16 @@
 {% extends "layout.jinja" %}
 {% block body %}
-    <div class="flex flex-col gap-2 text-center">
-        <h1 class="tracking-wider font-light">{{ code }}</h1>
-        <p class="text-2xl font-medium tracking-[0.3rem] uppercase">{{ message }}</p>
-        <a class="mt-8 underline decoration-dotted hover:decoration-solid"
-           href="/">Back to Home</a>
+    <div>
+        <style>
+            me {
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+                text-align: center;
+            }
+        </style>
+        <p>{{ code }}</p>
+        <h1 class="title">{{ message }}</h1>
+        <a href="/">Back to Home</a>
     </div>
 {% endblock %}

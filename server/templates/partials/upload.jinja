@@ -1,57 +1,27 @@
 {% extends "modal.jinja" %}
 {% block modal %}
-    <form action="/image"
-          method="post"
-          enctype="multipart/form-data"
-          class="w-full max-w-xl"
-          @submit="isUploading = true"
-          x-data="{ imageUrl: null, isUploading: false, onImageSelected(event) { const file = event.target.files[0]; if (file) { this.imageUrl = URL.createObjectURL(file); } } }">
+    <form action="/image" method="post" enctype="multipart/form-data">
         <!-- Image Upload Button -->
-        <div x-show="!imageUrl"
-             class="rounded-md py-3 px-5 text-white cursor-pointer bg-blue-600 hover:bg-blue-700"
-             @click="$refs.imageInput.click()">
+        <div>
             <p>Upload Image</p>
-            <input type="file"
-                   class="hidden"
-                   x-ref="imageInput"
-                   name="image"
-                   @change="onImageSelected($event)"
-                   accept="image/*">
+            <input type="file" name="image" accept="image/*" />
         </div>
         <!-- Details Form -->
-        <div x-show="imageUrl" x-transition class="flex flex-col gap-4 px-8">
-            <img :src="imageUrl" class="h-80 w-full object-contain">
+        <div class="flex flex-col gap-4 px-8">
+            <!-- <img> -->
             <div>
-                <label for="input-title"
-                       class="block mb-2 text-sm font-medium text-zinc-900 dark:text-white">Title</label>
-                <input type="text"
-                       id="input-title"
-                       name="title"
-                       class="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                       required />
+                <label for="input-title">Title</label>
+                <input type="text" id="input-title" name="title" required />
             </div>
             <div>
-                <label for="input-artist"
-                       class="block mb-2 text-sm font-medium text-zinc-900 dark:text-white">Artist</label>
-                <input type="text"
-                       id="input-artist"
-                       name="artist"
-                       class="bg-zinc-50 border border-zinc-300 text-zinc-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-zinc-700 dark:border-zinc-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
+                <label for="input-artist">Artist</label>
+                <input type="text" id="input-artist" name="artist" />
             </div>
-            <div class="flex items-center">
-                <input id="checkbox-dark"
-                       type="checkbox"
-                       value="on"
-                       name="dark"
-                       class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 dark:focus:ring-blue-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600">
-                <label for="checkbox-dark"
-                       class="ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">Use dark background</label>
+            <div>
+                <input type="checkbox" id="checkbox-dark" value="on" name="dark" />
+                <label for="checkbox-dark">Use dark background</label>
             </div>
-            <button id="upload-button"
-                    type="submit"
-                    :disabled="isUploading"
-                    x-text="isUploading ? 'Uploading...' : 'Upload'"
-                    class="rounded-md py-3 px-5 text-white bg-blue-600 hover:bg-blue-700"></button>
+            <button id="upload-button" type="submit">Upload</button>
         </div>
     </form>
 {% endblock %}

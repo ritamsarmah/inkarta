@@ -27,15 +27,6 @@
 
                 me button svg { width: 1.5rem; height: 1.5rem; }
 
-                me h1 {
-                    font-size: 1.5rem;
-                    font-weight: 300;
-                    line-height: 2rem;
-                    letter-spacing: 0.3rem;
-                    text-transform: uppercase;
-                    padding-top: 0.125rem;
-                }
-
                 @media dark {
                     me button { color: white; }
                     me button:hover { background-color: var(--gray-800); }
@@ -52,7 +43,7 @@
                 </svg>
             </button>
             <!-- Title -->
-            <h1>Gallery</h1>
+            <h1 class="title">Gallery</h1>
             <!-- Upload Image Button -->
             <button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend">
                 <svg xmlns="http://www.w3.org/2000/svg"
