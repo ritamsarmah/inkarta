@@ -29,33 +29,52 @@
         </script>
         <style>
             :root {
-                --gray-50: rgb(250 250 250);
-                --gray-100: rgb(244 244 245);
-                --gray-200: rgb(228 228 231);
-                --gray-300: rgb(212 212 216);
-                --gray-400: rgb(161 161 170);
-                --gray-500: rgb(113 113 122);
-                --gray-600: rgb(82 82 91);
-                --gray-700: rgb(63 63 70);
-                --gray-800: rgb(39 39 42);
-                --gray-900: rgb(24 24 27);
+                --gray-50: #fafafa;
+                --gray-100: #f4f4f5;
+                --gray-200: #e4e4e7;
+                --gray-300: #d4d4d8;
+                --gray-400: #a1a1aa;
+                --gray-500: #71717a;
+                --gray-600: #52525b;
+                --gray-700: #3f3f46;
+                --gray-800: #27272a;
+                --gray-900: #18181b;
+                --gray-950: #09090b;
+
+                --blue-50: #eff6ff;
+                --blue-100: #dbeafe;
+                --blue-200: #bfdbfe;
+                --blue-300: #93c5fd;
+                --blue-400: #60a5fa;
+                --blue-500: #3b82f6;
+                --blue-600: #2563eb;
+                --blue-700: #1d4ed8;
+                --blue-800: #1e40af;
+                --blue-900: #1e3a8a;
+                --blue-950: #172554;
             }
 
             /* CSS Reset */
-            *, *::before, *::after { box-sizing:border-box; }
+            *, *::before, *::after { box-sizing: border-box; }
             * { margin:0; }
-            body { -webkit-font-smoothing:antialiased; }
-            img, picture, video, canvas, svg { display:block; max-width:100%; }
-            input, button, textarea, select { font:inherit; }
-            p, h1, h2, h3, h4, h5, h6 { overflow-wrap:break-word; }
-            #root, #__next { isolation:isolate; }
+            body { -webkit-font-smoothing: antialiased; }
+            img, picture, video, canvas, svg { display: block; max-width: 100%; }
+            input, button, textarea, select { font: inherit; }
+            p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+            #root, #__next { isolation: isolate; }
         </style>
     </head>
     <body>
         <style>
-            me { padding:1rem; margin:0 auto; font-family:sans-serif; background-color:white; max-width:80rem; }
-            @media md { me { padding:2rem; } }
-            @media dark { me { background-color:var(--gray-900) } }
+            me {
+                padding: 1rem;
+                margin: 0 auto;
+                font-family: sans-serif;
+                background-color: white;
+                max-width: 80rem;
+            }
+            @media md { me { padding: 2rem; } }
+            @media dark { me { background-color: var(--gray-900) } }
         </style>
         {% block body %}{% endblock %}
     </body>

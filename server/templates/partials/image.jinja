@@ -1,18 +1,71 @@
 {% extends "modal.jinja" %}
 {% block modal %}
-    <div class="flex flex-col text-center items-center justify-center gap-4">
-        <img class="size-96 object-contain"
-             src="{{ image.src }}"
-             alt="{{ image.title }}">
+    <div>
+        <style>
+            me {
+                display: flex;
+                flex-direction: column;
+                text-align: center;
+                align-items: center;
+                justify-content: center
+                gap: 1rem;
+            }
+
+            img {
+                width: 24rem;
+                height: 24rem;
+                object-fit: contain;
+            }
+        </style>
+        <img src="{{ image.src }}" alt="{{ image.title }}">
         <div>
-            <p class="font-medium text-lg text-black dark:text-white">{{ image.title }}</p>
-            <p class="font-light text-zinc-500">{{ image.artist }}</p>
+            <style>
+                me p[n1] {
+                    font-weight: 500;
+                    font-size: 1.125rem;
+                    color: black;
+                }
+
+                me p[n2] {
+                    font-weight: 300;
+                    color: var(--gray-500);
+                }
+
+                @media dark {
+                    me p[n1] { color: white; }
+                }
+            </style>
+
+            <p[n1]>{{ image.title }}</p>
+            <p[n2]>{{ image.artist }}</p>
         </div>
-        <div class="flex gap-4 mt-4">
+        <div>
+            <style>
+                me {
+                    display: flex;
+                    gap: 1rem;
+                    margin-top: 1rem;
+                }
+            </style>
             <form method="put" action="/image/next">
                 <input type="hidden" name="id" value="{{ image.id }}">
-                <button id="next-button"
-                        class="rounded-md py-3 px-5 text-white bg-blue-600 hover:bg-blue-700">Select Image</button>
+                <button id="next-button" class="rounded-md py-3 px-5 text-white bg-blue-600 hover:bg-blue-700">
+                    <style>
+                        me {
+                          border-radius: 0.375rem;
+                          padding-top: 0.75rem;
+                          padding-bottom: 0.75rem;
+                          padding-left: 1.25rem;
+                          padding-right: 1.25rem;
+                          color: white;
+                          background-color: var(--blue-600);
+                        }
+
+                        me:hover { background-color: var(--blue-700); }
+                    </style>
+
+                    Select Image
+                </button>
             </form>
             <span x-init
                   @ajax:before="confirm('Are you sure you want to permanently delete this image?') || $event.preventDefault()">
