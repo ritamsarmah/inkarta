@@ -39,7 +39,5 @@
         </svg>
     </button>
     {% block modal %}{% endblock %}
-    <script>
-        me(".close-btn").on("click", ev => me("#modal").remove());
-    </script>
+    <script>me(".close-btn").on("click", ev => me("#modal").remove());</script>
 </div>

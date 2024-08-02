@@ -47,31 +47,12 @@
                     gap: 1rem;
                     margin-top: 1rem;
                 }
-
-                me button {
-                    border-radius: 0.375rem;
-                    border: 1px solid var(--blue-600);
-                    padding-top: 0.75rem;
-                    padding-bottom: 0.75rem;
-                    padding-left: 1.25rem;
-                    padding-right: 1.25rem;
-                    color: white;
-                    background-color: var(--blue-600);
-                }
-
-                me button:not(:disabled):hover { background-color: var(--blue-700); }
-                me button:disabled {
-                    background-color: transparent;
-                    border: 1px solid var(--gray-400);
-                    color: var(--gray-400);
-                    cursor: default;
-                }
-
             </style>
-            <button hx-put="/image/next/{{ image.id }}" hx-swap="outerHTML">
-                Select Image
-            </button>
-            <button hx-delete="/image/{{ image.id }}" hx-target="#modal" hx-swap="delete">
+            <button class="btn" hx-put="/image/next/{{ image.id }}" hx-swap="outerHTML">Select Image</button>
+            <button class="btn"
+                    hx-delete="/image/{{ image.id }}"
+                    hx-target="#modal"
+                    hx-swap="delete">
                 <style>
                     me {
                         padding: 0.75rem !important;

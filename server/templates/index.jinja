@@ -19,15 +19,15 @@
                     color: black;
                     border-radius: 50%;
                     padding: 0.25rem;
-                }
 
-                me button:hover { background-color: var(--gray-100); }
+                    &:hover { background-color: var(--gray-100); }
 
-                me button svg { width: 1.5rem; height: 1.5rem; }
+                    & svg { width: 1.5rem; height: 1.5rem; }
 
-                @media dark {
-                    me button { color: white; }
-                    me button:hover { background-color: var(--gray-800); }
+                    @media dark {
+                        & { color: white; }
+                        &:hover { background-color: var(--gray-800); }
+                    }
                 }
             </style>
             <!-- Frame Configuration Button -->
@@ -98,4 +98,5 @@
             </div>
         </main>
     </div>
+    {% include "partials/upload.jinja" %}
 {% endblock %}
