@@ -202,7 +202,9 @@ async fn create_image(
             }
         };
 
-        Redirect::to("/").into_response()
+        let mut headers = HeaderMap::new();
+        headers.insert("HX-Refresh", HeaderValue::from_static("true"));
+        (StatusCode::OK, headers).into_response()
     } else {
         utils::redirect_error(
             anyhow!("Failed to parse image upload form"),

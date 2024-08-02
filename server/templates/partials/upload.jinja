@@ -1,6 +1,6 @@
 {% extends "modal.jinja" %}
 {% block modal %}
-    <form hx-post="/" enctype="multipart/form-data" hx-indicator="#spinner">
+    <form hx-post="/image" enctype="multipart/form-data" hx-indicator="#upload-btn">
         <style>
             me { 
                 display: flex;
@@ -31,7 +31,7 @@
         <div id="details-form">
             <style>
                 me {
-                    display: none; /* switches to flex on show */
+                    display: none; /* switches to flex after image selection */
                     flex-direction: column;
                     align-items: center;
                     justify-content: center;
@@ -50,28 +50,48 @@
                     me {
                         display: flex;
                         flex-direction: column;
+                        text-align: center;
                         gap: 1rem;
                     }
 
                     me input[type="text"] {
+                        background-color: var(--gray-50);
+                        border: 1px solid var(--gray-300);
+                        border-radius: 0.2rem;
+                        padding: 0.25rem;
+                        margin-left: 0.25rem;
+
+                        @media dark {
+                            & {
+                                background-color: var(--gray-700);
+                                border-color: var(--gray-600);
+                            }
+                        }
                     }
+
+                    me input[type="checkbox"] {
+                        vertical-align: middle;
+                        position: relative;
+                        bottom: 1px;
+                        margin-right: 0.25rem;
+                    }
+
+                    me butt
                 </style>
                 <label>
-                    Title
+                    Title:
                     <input type="text" name="title" required />
                 </label>
                 <label>
-                    Artist
+                    Artist:
                     <input type="text" name="artist" />
                 </label>
                 <label>
-                    Use dark background
                     <input type="checkbox" value="on" name="dark" />
+                    Use dark background
                 </label>
             </div>
-            <button class="btn" type="submit">Upload</button>
-            <div id="spinner"></div>
-            <!-- TODO: Add loading indicator using hx-indicator -->
+            <button id="upload-btn" class="btn" type="submit">Upload</button>
         </div>
     </form>
 {% endblock %}

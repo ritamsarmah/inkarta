@@ -1,16 +1,7 @@
 {% extends "base.jinja" %}
 {% block body %}
     <div>
-        <style>
-            me {
-                display: flex;
-                flex-direction: column;
-                gap: 0.5rem;
-                text-align: center;
-            }
-        </style>
+        <h1>{{ message }}</h1>
         <p>{{ code }}</p>
-        <h1 class="title">{{ message }}</h1>
-        <a href="/">Back to Home</a>
     </div>
 {% endblock %}

@@ -11,41 +11,35 @@
                 gap: 1rem;
             }
 
-            img {
+            me p[n1] {
+                margin-top: 1.5rem;
+                font-weight: 500;
+                font-size: 1.5rem;
+
+                @media dark { & { color: white; } }
+            }
+
+            me p[n2] {
+                margin-top: 0.5rem;
+                font-weight: 300;
+                color: var(--gray-400);
+            }
+
+            me img {
                 width: 24rem;
                 height: 24rem;
                 object-fit: contain;
             }
         </style>
-        <!-- Image -->
         <img src="{{ image.src }}" alt="{{ image.title }}">
-        <!-- Description -->
-        <div>
-            <style>
-                me p[n1] {
-                    font-weight: 500;
-                    font-size: 2rem;
-                    color: black;
-                }
-
-                me p[n2] {
-                    font-weight: 300;
-                    color: var(--gray-500);
-                }
-
-                @media dark {
-                    me p[n1] { color: white; }
-                }
-            </style>
-            <p [n1]>{{ image.title }}</p>
-            <p [n2]>{{ image.artist }}</p>
-        </div>
+        <p n1>{{ image.title }}</p>
+        <p n2>{{ image.artist }}</p>
         <div>
             <style>
                 me {
                     display: flex;
                     gap: 1rem;
-                    margin-top: 1rem;
+                    margin-top: 3rem;
                 }
             </style>
             <button class="btn" hx-put="/image/next/{{ image.id }}" hx-swap="outerHTML">Select Image</button>
@@ -56,8 +50,12 @@
                 <style>
                     me {
                         padding: 0.75rem !important;
-                        background-color: red !important;
-                        border-color: red !important;
+                        background-color: var(--red-500) !important;
+                        border-color: var(--red-500) !important;
+                        &:hover {
+                            background-color: var(--red-600) !important;
+                            border-color: var(--red-600) !important;
+                        }
                     }
 
                     me svg { width: 1.25rem; height: 1.25rem; }
