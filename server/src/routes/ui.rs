@@ -143,9 +143,14 @@ async fn partial_image(
                 src: to_src(image.data),
             };
 
+            let next_id = db::get_next_id(&state.pool).await;
+            println!("{next_id:?} {0}", image.id);
+
             let env = state.reloader.acquire_env().unwrap();
             let template = env.get_template("partials/image.jinja").unwrap();
-            let html = template.render(context!(image => image)).unwrap();
+            let html = template
+                .render(context!(image => image, next_id => next_id))
+                .unwrap();
 
             Html(html).into_response()
         }

@@ -1,6 +1,8 @@
 {% extends "modal.jinja" %}
 {% block modal %}
-    <form hx-post="/image" enctype="multipart/form-data" hx-indicator="#upload-btn">
+    <form hx-post="/image"
+          enctype="multipart/form-data"
+          hx-indicator=".htmx-upload">
         <style>
             me { 
                 display: flex;
@@ -91,7 +93,19 @@
                     Use dark background
                 </label>
             </div>
-            <button id="upload-btn" class="btn" type="submit">Upload</button>
+            <button class="htmx-upload btn" type="submit">
+                <style>
+                    me.htmx-request { display: none; }
+                </style>
+                Upload
+            </button>
+            <button class="htmx-upload btn" disabled>
+                <style>
+                    me { display: none; }
+                    me.htmx-request { display: block; }
+                </style>
+                Uploading...
+            </button>
         </div>
     </form>
 {% endblock %}

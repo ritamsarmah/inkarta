@@ -147,7 +147,7 @@ async fn set_next_id(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     match db::update_next_id(&state.pool, id).await {
-        Ok(_) => "<button disabled>Selected</button>".into_response(),
+        Ok(_) => "<button class=\"btn\" disabled>Selected</button".into_response(),
         Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
     }
 }
