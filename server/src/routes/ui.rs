@@ -105,23 +105,29 @@ async fn partial_upload(State(state): State<AppState>) -> impl IntoResponse {
 }
 
 async fn partial_frame(State(state): State<AppState>) -> impl IntoResponse {
-    let context = db::get_frame(&state.pool).await.map_or_else(
-        || context!(frame => ()),
-        |frame| {
+    let context = match db::get_frame(&state.pool).await {
+        Some(frame) => {
+            let next_title = if let Some(next) = frame.next {
+                db::get_image(&state.pool, next).await.unwrap().title
+            } else {
+                "None".to_string()
+            };
+
+            let current_title = if let Some(current) = frame.current {
+                db::get_image(&state.pool, current).await.unwrap().title
+            } else {
+                "None".to_string()
+            };
+
             let frame = JinjaFrame {
                 name: frame.name,
-                next: frame.next.map_or_else(
-                    || "Next image has not been selected".to_string(),
-                    |x| x.to_string(),
-                ),
-                current: frame.current.map_or_else(
-                    || "No image currently showing".to_string(),
-                    |x| x.to_string(),
-                ),
+                next: next_title,
+                current: current_title,
             };
             context!(frame => frame)
-        },
-    );
+        }
+        None => context!(frame => ()),
+    };
 
     let env = state.reloader.acquire_env().unwrap();
     let template = env.get_template("partials/frame.jinja").unwrap();
@@ -144,7 +150,6 @@ async fn partial_image(
             };
 
             let next_id = db::get_next_id(&state.pool).await;
-            println!("{next_id:?} {0}", image.id);
 
             let env = state.reloader.acquire_env().unwrap();
             let template = env.get_template("partials/image.jinja").unwrap();
