@@ -1,8 +1,7 @@
-use anyhow::{Context, Result};
-use sqlx::Row;
+use anyhow::Result;
 use sqlx::{sqlite::SqliteQueryResult, Pool, Sqlite};
 
-use crate::model::{Frame, Identifier, Image, Thumbnail};
+use crate::model::{Identifier, Image, Thumbnail};
 
 pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
     let result = sqlx::query(
@@ -15,8 +14,7 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
             thumbnail blob not null
         );
 
-        create table if not exists frame (
-            name text not null,
+        create table if not exists device (
             next integer,
             current integer,
             foreign key(next) references images(id),
@@ -57,29 +55,26 @@ pub async fn create_image(
     Ok(())
 }
 
-pub async fn get_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<Image> {
-    let image = sqlx::query_as("select * from images where id = ?")
+pub async fn get_image(pool: &Pool<Sqlite>, id: Identifier) -> Option<Image> {
+    sqlx::query_as("select * from images where id = ?")
         .bind(id)
         .fetch_one(pool)
-        .await?;
-
-    Ok(image)
+        .await
+        .ok()
 }
 
-pub async fn get_random_id(pool: &Pool<Sqlite>) -> Result<Identifier> {
-    sqlx::query("select id from images order by random() limit 1")
+pub async fn get_random_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
+    sqlx::query_scalar("select id from images order by random() limit 1")
         .fetch_one(pool)
-        .await?
-        .try_get("id")
-        .context("Failed to retrieve random image identifier")
+        .await
+        .ok()
 }
 
-pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Result<Vec<Thumbnail>> {
-    let thumbnails = sqlx::query_as("select id, title, artist, thumbnail from images")
+pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Option<Vec<Thumbnail>> {
+    sqlx::query_as("select id, title, artist, thumbnail from images")
         .fetch_all(pool)
-        .await?;
-
-    Ok(thumbnails)
+        .await
+        .ok()
 }
 
 pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
@@ -91,44 +86,19 @@ pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
     Ok(())
 }
 
-/* Frame */
+/* Device */
 
-pub async fn register_frame(pool: &Pool<Sqlite>, name: &str) -> Result<()> {
-    // NOTE: Currently only supports single frame registered to server
-    let query = "
-        insert or replace into frame (name)
-        values (?)
-    ";
-
-    sqlx::query(query).bind(name).execute(pool).await?;
-
-    Ok(())
-}
-
-pub async fn get_frame(pool: &Pool<Sqlite>) -> Option<Frame> {
-    sqlx::query_as("select * from frame")
+/// Get the next image ID for display
+pub async fn get_next_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
+    sqlx::query_scalar("select next from device limit 1")
         .fetch_one(pool)
         .await
         .ok()
 }
 
-pub async fn get_next_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
-    get_frame(pool).await.and_then(|frame| frame.next)
-}
-
-pub async fn set_current_to_next(pool: &Pool<Sqlite>) -> Result<()> {
-    // Update current column value using next
-    sqlx::query("update frame set current = next")
-        .execute(pool)
-        .await?;
-
-    update_random_next_id(pool).await?;
-
-    Ok(())
-}
-
-pub async fn update_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
-    sqlx::query("update frame set next = ?")
+/// Set the next image ID for display to the specified ID
+pub async fn set_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
+    sqlx::query("update device set next = ?")
         .bind(id)
         .execute(pool)
         .await?;
@@ -136,9 +106,32 @@ pub async fn update_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
     Ok(())
 }
 
-pub async fn update_random_next_id(pool: &Pool<Sqlite>) -> Result<()> {
-    let next = get_random_id(pool).await?;
-    update_next_id(pool, next).await?;
+/// Set the next image ID to a random ID
+pub async fn set_random_next_id(pool: &Pool<Sqlite>) -> Result<()> {
+    sqlx::query(
+        "
+        update device
+        set next = (
+            select id from images
+            order by random()
+            limit 1
+        )
+        ",
+    )
+    .execute(pool)
+    .await?;
+
+    Ok(())
+}
+
+/// Sets the current display image ID to the next ID, and updates the next ID.
+pub async fn set_current(pool: &Pool<Sqlite>) -> Result<()> {
+    sqlx::query("update device set current = next")
+        .execute(pool)
+        .await?;
+
+    // Update next to a new random ID
+    set_random_next_id(pool).await?;
 
     Ok(())
 }

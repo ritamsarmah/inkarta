@@ -19,10 +19,3 @@ pub struct Thumbnail {
     pub artist: String,
     pub thumbnail: Vec<u8>,
 }
-
-#[derive(FromRow, Clone, Debug)]
-pub struct Frame {
-    pub name: String,
-    pub next: Option<Identifier>,
-    pub current: Option<Identifier>,
-}
