@@ -103,10 +103,16 @@ pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
 
 /// Get the next image identifier for display.
 pub async fn get_next_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
-    sqlx::query_scalar("select next from device limit 1")
-        .fetch_optional(pool)
-        .await
-        .ok()?
+    sqlx::query_scalar(
+        "
+        select next from device
+        where images.id is not null
+        limit 1
+        ",
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()?
 }
 
 /// Set the next image identifier for display to the specified identifier.
@@ -137,19 +143,17 @@ pub async fn set_random_next_id(pool: &Pool<Sqlite>) -> Result<()> {
     Ok(())
 }
 
-/// Sets the current image identifier to the next, and updates the next identifier.
-pub async fn set_current_id(pool: &Pool<Sqlite>) -> Result<()> {
-    sqlx::query("update device set current = next")
+/// Sets the current image identifier to the specified identifier.
+pub async fn set_current_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
+    sqlx::query("update device set current = ?")
+        .bind(id)
         .execute(pool)
         .await?;
-
-    // Update next to a new random identifier
-    set_random_next_id(pool).await?;
 
     Ok(())
 }
 
-/// Get the current image title
+/// Get the current image title.
 pub async fn get_current_title(pool: &Pool<Sqlite>) -> Option<String> {
     sqlx::query_scalar(
         "
@@ -165,7 +169,7 @@ pub async fn get_current_title(pool: &Pool<Sqlite>) -> Option<String> {
     .ok()?
 }
 
-/// Get the next image title
+/// Get the next image title.
 pub async fn get_next_title(pool: &Pool<Sqlite>) -> Option<String> {
     sqlx::query_scalar(
         "

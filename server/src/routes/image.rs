@@ -73,14 +73,12 @@ async fn get_next_image(
         match db::get_image(pool, id).await {
             Ok(next_image) => {
                 // Update current image ID and set a new random ID
-                match db::set_current_id(pool).await {
-                    Ok(_) => {}
-                    Err(e) => error!("Failed to set current ID: {}", e),
+                if let Err(err) = db::set_current_id(pool, id).await {
+                    error!("Failed to update current ID: {err}");
                 }
 
-                match db::set_random_next_id(pool).await {
-                    Ok(_) => {}
-                    Err(e) => error!("Failed to set random next ID: {}", e),
+                if let Err(err) = db::set_random_next_id(pool).await {
+                    error!("Failed to update random next ID: {err}");
                 }
 
                 let buffer = resize_into_bitmap(next_image, query.width, query.height);
