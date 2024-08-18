@@ -1,11 +1,11 @@
 use std::io::Cursor;
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{anyhow, Context, Error, Result};
 use axum::{
     body::{Body, Bytes},
     extract::{Multipart, Path, Query, State},
     http::{header, HeaderMap, HeaderValue, Response, StatusCode},
-    response::{IntoResponse, Redirect},
+    response::IntoResponse,
     routing::{get, post, put},
     Router,
 };
@@ -16,16 +16,15 @@ use serde::Deserialize;
 use tracing::debug;
 
 use crate::{
-    db::{self},
-    model::Identifier,
+    db,
+    model::{Identifier, Image},
     state::AppState,
-    utils,
 };
 
 const THUMBNAIL_SIZE: u32 = 512;
 
 #[derive(Deserialize)]
-struct FetchImageParams {
+struct ImageSizeParams {
     width: Option<u32>,
     height: Option<u32>,
 }
@@ -38,107 +37,75 @@ pub fn router() -> Router<AppState> {
         .route("/image/next/:id", put(set_next_id))
 }
 
-/// Gets raw image data scaled to an optional height and width
+/// Get raw image data scaled to an optional height and width
 async fn get_image(
     Path(id): Path<Identifier>,
-    Query(query): Query<FetchImageParams>,
+    Query(query): Query<ImageSizeParams>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     match db::get_image(&state.pool, id).await {
         Ok(image) => {
-            let mut buffer = Cursor::new(Vec::new());
-            let bmp = load_from_memory(&image.data).unwrap();
-
-            if let (Some(width), Some(height)) = (query.width, query.height) {
-                debug!("Returning image resized to {width} x {height}");
-
-                let resized = bmp.resize(width, height, FilterType::Lanczos3);
-
-                let background = ImageBuffer::from_pixel(width, height, Luma([image.background]));
-                let mut composite = DynamicImage::ImageLuma8(background);
-
-                let (new_width, new_height) = resized.dimensions();
-                let x_offset = (width - new_width) / 2;
-                let y_offset = (height - new_height) / 2;
-
-                overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
-                composite.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
-            } else {
-                debug!("Returning full-sized image");
-                bmp.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
-            }
-
+            let buffer = resize_into_bitmap(image, query.width, query.height);
             Response::builder()
                 .header(header::CONTENT_TYPE, "image/bmp")
                 .body(Body::from(buffer.into_inner()))
                 .unwrap()
         }
-        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+        Err(err) => not_found_error(err).into_response(),
     }
 }
 
-/// Deletes image with specified identifier
+/// Delete image with specified identifier
 async fn delete_image(
     Path(id): Path<Identifier>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let pool = state.pool;
+    match db::delete_image(&state.pool, id).await {
+        Ok(_) => {
+            debug!("Successfully deleted image with id: {id}");
 
-    if let Err(err) = db::delete_image(&pool, id).await {
-        debug!("Failed to delete image with id: {id}");
-        utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response()
-    } else {
-        debug!("Successfully delete image with id: {id}");
-        // After deletion, check if the next image was set to the deleted ID and update
-        if let Some(next_id) = db::get_next_id(&pool).await {
-            if next_id == id {
-                let _ = db::update_random_next_id(&pool).await;
-            }
+            let mut headers = HeaderMap::new();
+            headers.insert("HX-Refresh", HeaderValue::from_static("true"));
+            (StatusCode::OK, headers).into_response()
         }
-
-        let mut headers = HeaderMap::new();
-        headers.insert("HX-Refresh", HeaderValue::from_static("true"));
-        (StatusCode::OK, headers).into_response()
+        Err(err) => server_error(err).into_response(),
     }
 }
 
 /// Get next image for display
 async fn get_next_image(
-    Query(query): Query<FetchImageParams>,
+    Query(query): Query<ImageSizeParams>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    fn handle_error(err: anyhow::Error) -> Redirect {
-        utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
-    }
+    let pool = &state.pool;
 
-    if let Some(next_id) = db::get_next_id(&state.pool).await {
-        // Update the current and next id in database
-        match db::set_current_to_next(&state.pool).await {
-            Ok(_) => {
-                // Return the next image
-                get_image(Path(next_id), Query(query), State(state))
-                    .await
-                    .into_response()
+    // Retrieve next image (or random image ID if no next value set)
+    let next_id = match db::get_next_id(pool).await {
+        Some(id) => Some(id),
+        None => db::get_random_id(pool).await,
+    };
+
+    if let Some(id) = next_id {
+        match db::get_image(pool, id).await {
+            Ok(next_image) => {
+                // Update current image ID and set a new random ID
+                db::set_current(pool);
+                db::set_random_next_id(pool);
+
+                let buffer = resize_into_bitmap(next_image, query.width, query.height);
+                Response::builder()
+                    .header(header::CONTENT_TYPE, "image/bmp")
+                    .body(Body::from(buffer.into_inner()))
+                    .unwrap()
             }
-            Err(err) => handle_error(err).into_response(),
+            Err(err) => server_error(err).into_response(),
         }
     } else {
-        // No next ID set for frame, retrieve a random next ID
-        match db::get_random_id(&state.pool).await {
-            Ok(next_id) => {
-                // Images exist, but were not set for frame (or frame not registered)
-                match db::update_next_id(&state.pool, next_id).await {
-                    Ok(_) => {
-                        // Return the next image
-                        get_image(Path(next_id), Query(query), State(state))
-                            .await
-                            .into_response()
-                    }
-                    Err(err) => handle_error(err).into_response(),
-                }
-            }
-            Err(err) => handle_error(err).into_response(),
-        }
+        (
+            StatusCode::NOT_FOUND,
+            "No images available in the database".to_owned(),
+        )
+            .into_response()
     }
 }
 
@@ -146,9 +113,9 @@ async fn set_next_id(
     Path(id): Path<Identifier>,
     State(state): State<AppState>,
 ) -> impl IntoResponse {
-    match db::update_next_id(&state.pool, id).await {
+    match db::set_next_id(&state.pool, id).await {
         Ok(_) => "<button class=\"btn\" disabled>Selected</button".into_response(),
-        Err(err) => utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR).into_response(),
+        Err(err) => server_error(err).into_response(),
     }
 }
 
@@ -169,48 +136,25 @@ async fn create_image(
             "artist" => artist = field.text().await.ok(),
             "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
             "image" => {
-                if let Ok(data) = field.bytes().await {
-                    match process_image(&data, &mut bitmap, &mut thumbnail) {
-                        Ok(_) => debug!("Processed bitmap image successfully"),
-                        Err(err) => {
-                            return utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
-                                .into_response()
-                        }
-                    }
-                } else {
-                    return utils::redirect_error(
-                        anyhow!("No image provided in form data"),
-                        StatusCode::BAD_REQUEST,
-                    )
-                    .into_response();
-                }
+                let data = field.bytes().await.unwrap();
+                process_image(&data, &mut bitmap, &mut thumbnail);
             }
             _ => {}
         };
     }
 
-    // TODO: Store to database in separate thread, but redirect immediately
-
+    // Process image in the background and return immediately
     if let (Some(title), Some(artist)) = (title, artist) {
-        let background: u8 = if dark { 0 } else { 255 };
-
-        match db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail).await {
-            Ok(_) => debug!("Created new image with title ({title}) and artist ({artist})"),
-            Err(err) => {
-                return utils::redirect_error(err, StatusCode::INTERNAL_SERVER_ERROR)
-                    .into_response()
-            }
-        };
+        tokio::spawn(async move {
+            let background: u8 = if dark { 0 } else { 255 };
+            db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail).await;
+        });
 
         let mut headers = HeaderMap::new();
         headers.insert("HX-Refresh", HeaderValue::from_static("true"));
         (StatusCode::OK, headers).into_response()
     } else {
-        utils::redirect_error(
-            anyhow!("Failed to parse image upload form"),
-            StatusCode::BAD_REQUEST,
-        )
-        .into_response()
+        (StatusCode::BAD_REQUEST, "Failed to upload image".to_owned()).into_response()
     }
 }
 
@@ -237,4 +181,40 @@ fn process_image(
     thumbnail.write_to(&mut cursor, ImageFormat::Jpeg)?;
 
     Ok(())
+}
+
+fn resize_into_bitmap(image: Image, width: Option<u32>, height: Option<u32>) -> Cursor<Vec<u8>> {
+    let mut buffer = Cursor::new(Vec::new());
+    let bmp = load_from_memory(&image.data).unwrap();
+
+    if let (Some(width), Some(height)) = (width, height) {
+        debug!("Returning image resized to {width} x {height}");
+
+        let resized = bmp.resize(width, height, FilterType::Lanczos3);
+
+        let background = ImageBuffer::from_pixel(width, height, Luma([image.background]));
+        let mut composite = DynamicImage::ImageLuma8(background);
+
+        let (new_width, new_height) = resized.dimensions();
+        let x_offset = (width - new_width) / 2;
+        let y_offset = (height - new_height) / 2;
+
+        overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
+        composite.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
+    } else {
+        debug!("Returning full-sized image");
+        bmp.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
+    }
+
+    buffer
+}
+
+/* Error Handling */
+
+fn not_found_error(err: Error) -> (StatusCode, String) {
+    (StatusCode::NOT_FOUND, err.to_string())
+}
+
+fn server_error(err: Error) -> (StatusCode, String) {
+    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }
