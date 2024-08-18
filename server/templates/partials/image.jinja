@@ -31,9 +31,9 @@
                 object-fit: contain;
             }
         </style>
-        <img src="{{ image.src }}" alt="{{ image.title }}">
-        <p n1>{{ image.title }}</p>
-        <p n2>{{ image.artist }}</p>
+        <img src="{{ src }}" alt="{{ title }}">
+        <p n1>{{ title }}</p>
+        <p n2>{{ artist }}</p>
         <div>
             <style>
                 me {
@@ -42,13 +42,13 @@
                     margin-top: 3rem;
                 }
             </style>
-            {% if image.id == next_id %}
+            {% if id == next_id %}
                 <button class="btn" disabled>Selected</button>
             {% else %}
-                <button class="btn" hx-put="/image/next/{{ image.id }}" hx-swap="outerHTML">Select Image</button>
+                <button class="btn" hx-put="/image/next/{{ id }}" hx-swap="outerHTML">Select Image</button>
             {% endif %}
             <button class="btn"
-                    hx-delete="/image/{{ image.id }}"
+                    hx-delete="/image/{{ id }}"
                     hx-target="#modal"
                     hx-swap="delete">
                 <style>

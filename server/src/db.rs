@@ -65,9 +65,9 @@ pub async fn get_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<Image> {
 
 pub async fn get_random_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
     sqlx::query_scalar("select id from images order by random() limit 1")
-        .fetch_one(pool)
+        .fetch_optional(pool)
         .await
-        .ok()
+        .ok()?
 }
 
 pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Option<Vec<Thumbnail>> {
@@ -99,15 +99,15 @@ pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
 
 /* Device */
 
-/// Get the next image identifier for display
+/// Get the next image identifier for display.
 pub async fn get_next_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
     sqlx::query_scalar("select next from device limit 1")
-        .fetch_one(pool)
+        .fetch_optional(pool)
         .await
-        .ok()
+        .ok()?
 }
 
-/// Set the next image identifier for display to the specified identifier
+/// Set the next image identifier for display to the specified identifier.
 pub async fn set_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
     sqlx::query("update device set next = ?")
         .bind(id)
@@ -117,7 +117,7 @@ pub async fn set_next_id(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
     Ok(())
 }
 
-/// Set the next image identifier to a random identifier
+/// Set the next image identifier to a random identifier.
 pub async fn set_random_next_id(pool: &Pool<Sqlite>) -> Result<()> {
     sqlx::query(
         "
@@ -136,7 +136,7 @@ pub async fn set_random_next_id(pool: &Pool<Sqlite>) -> Result<()> {
 }
 
 /// Sets the current image identifier to the next, and updates the next identifier.
-pub async fn set_current(pool: &Pool<Sqlite>) -> Result<()> {
+pub async fn set_current_id(pool: &Pool<Sqlite>) -> Result<()> {
     sqlx::query("update device set current = next")
         .execute(pool)
         .await?;
@@ -145,4 +145,34 @@ pub async fn set_current(pool: &Pool<Sqlite>) -> Result<()> {
     set_random_next_id(pool).await?;
 
     Ok(())
+}
+
+/// Get the current image title
+pub async fn get_current_title(pool: &Pool<Sqlite>) -> Option<String> {
+    sqlx::query_scalar(
+        "
+        select images.title
+        from device
+        left join images on device.current = images.id
+        limit 1
+        ",
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()?
+}
+
+/// Get the next image title
+pub async fn get_next_title(pool: &Pool<Sqlite>) -> Option<String> {
+    sqlx::query_scalar(
+        "
+        select images.title
+        from device
+        left join images on device.next = images.id
+        limit 1
+        ",
+    )
+    .fetch_optional(pool)
+    .await
+    .ok()?
 }

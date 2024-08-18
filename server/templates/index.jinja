@@ -30,8 +30,8 @@
                     }
                 }
             </style>
-            <!-- Frame Configuration Button -->
-            <button hx-get="/ui/frame" hx-target="body" hx-swap="beforeend">
+            <!-- Device Configuration Button -->
+            <button hx-get="/ui/device" hx-target="body" hx-swap="beforeend">
                 <svg xmlns="http://www.w3.org/2000/svg"
                      fill="none"
                      viewBox="0 0 24 24"
@@ -56,46 +56,59 @@
         <!-- Image Gallery -->
         <main>
             <style>me { margin-top: 2rem; }</style>
-            <div>
-                <style>
+            {% if thumbnails|length > 0 %}
+                <div>
+                    <style>
                     me { display: grid; gap: 1rem; }
                     @media sm { me { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
                     @media md { me { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
                     @media lg { me { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
-                </style>
-                {% for thumbnail in thumbnails %}
-                    <a hx-get="{{ thumbnail.href }}" hx-target="body" hx-swap="beforeend">
-                        <style>
+                    </style>
+                    {% for thumbnail in thumbnails %}
+                        <a hx-get="{{ thumbnail.href }}" hx-target="body" hx-swap="beforeend">
+                            <style>
+                                me {
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+                                    justify-content: center;
+                                    text-align: center;
+                                    padding: 1rem;
+                                    border-radius: 0.375rem;
+                                    cursor: pointer;
+                                    text-decoration: none;
+                                    color: var(--gray-900);
+                                }
+                                me > * + * { margin-top: 0.75rem; }
+                                @media dark { me { color: white; } }
+
+                                me:hover { background-color: var(--gray-100); }
+                                @media dark { me:hover { background-color: var(--gray-800); } }
+
+                                me img { width: 16rem; height: 16rem; object-fit: contain; }
+                                me p[n1] { font-weight: 500; margin-bottom: 0.25rem; }
+                                me p[n2] { font-weight: 300; color: var(--gray-400); }
+                            </style>
+                            <img src="{{ thumbnail.src }}" />
+                            <div>
+                                <p n1>{{ thumbnail.title }}</p>
+                                <p n2>{{ thumbnail.artist }}</p>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div>
+                    <style>
                             me {
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                                justify-content: center;
                                 text-align: center;
-                                padding: 1rem;
-                                border-radius: 0.375rem;
-                                cursor: pointer;
-                                text-decoration: none;
-                                color: var(--gray-900);
+                                color: var(--gray-400);
+                                font-style: italic;
                             }
-                            me > * + * { margin-top: 0.75rem; }
-                            @media dark { me { color: white; } }
-
-                            me:hover { background-color: var(--gray-100); }
-                            @media dark { me:hover { background-color: var(--gray-800); } }
-
-                            me img { width: 16rem; height: 16rem; object-fit: contain; }
-                            me p[n1] { font-weight: 500; margin-bottom: 0.25rem; }
-                            me p[n2] { font-weight: 300; color: var(--gray-400); }
-                        </style>
-                        <img src="{{ thumbnail.src }}" />
-                        <div>
-                            <p n1>{{ thumbnail.title }}</p>
-                            <p n2>{{ thumbnail.artist }}</p>
-                        </div>
-                    </a>
-                {% endfor %}
-            </div>
+                    </style>
+                    No images found
+                </div>
+            {% endif %}
         </main>
     </div>
 {% endblock %}

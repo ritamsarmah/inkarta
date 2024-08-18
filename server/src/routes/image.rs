@@ -1,6 +1,6 @@
 use std::io::Cursor;
 
-use anyhow::{anyhow, Context, Error, Result};
+use anyhow::{Context, Result};
 use axum::{
     body::{Body, Bytes},
     extract::{Multipart, Path, Query, State},
@@ -13,12 +13,13 @@ use image::{
     imageops::*, load_from_memory, DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Luma,
 };
 use serde::Deserialize;
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::{
     db,
     model::{Identifier, Image},
     state::AppState,
+    utils::{not_found_error, server_error},
 };
 
 const THUMBNAIL_SIZE: u32 = 512;
@@ -89,8 +90,15 @@ async fn get_next_image(
         match db::get_image(pool, id).await {
             Ok(next_image) => {
                 // Update current image ID and set a new random ID
-                db::set_current(pool);
-                db::set_random_next_id(pool);
+                match db::set_current_id(pool).await {
+                    Ok(_) => {}
+                    Err(e) => error!("Failed to set current ID: {}", e),
+                }
+
+                match db::set_random_next_id(pool).await {
+                    Ok(_) => {}
+                    Err(e) => error!("Failed to set random next ID: {}", e),
+                }
 
                 let buffer = resize_into_bitmap(next_image, query.width, query.height);
                 Response::builder()
@@ -137,7 +145,10 @@ async fn create_image(
             "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
             "image" => {
                 let data = field.bytes().await.unwrap();
-                process_image(&data, &mut bitmap, &mut thumbnail);
+                match process_image(&data, &mut bitmap, &mut thumbnail) {
+                    Ok(_) => debug!("Processed uploaded image"),
+                    Err(err) => error!("Failed to process image: {err}"),
+                };
             }
             _ => {}
         };
@@ -147,7 +158,12 @@ async fn create_image(
     if let (Some(title), Some(artist)) = (title, artist) {
         tokio::spawn(async move {
             let background: u8 = if dark { 0 } else { 255 };
-            db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail).await;
+            match db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail)
+                .await
+            {
+                Ok(_) => debug!("Created new image"),
+                Err(err) => error!("Failed to create image: {err}"),
+            }
         });
 
         let mut headers = HeaderMap::new();
@@ -207,14 +223,4 @@ fn resize_into_bitmap(image: Image, width: Option<u32>, height: Option<u32>) -> 
     }
 
     buffer
-}
-
-/* Error Handling */
-
-fn not_found_error(err: Error) -> (StatusCode, String) {
-    (StatusCode::NOT_FOUND, err.to_string())
-}
-
-fn server_error(err: Error) -> (StatusCode, String) {
-    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
 }

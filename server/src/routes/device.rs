@@ -7,6 +7,7 @@ use axum::{
     Router,
 };
 use serde::Deserialize;
+use tracing::{debug, error};
 
 use crate::{db, model::Identifier, state::AppState};
 
@@ -31,5 +32,8 @@ async fn rtc() -> impl IntoResponse {
 }
 
 async fn update_next_id(State(state): State<AppState>, Query(params): Query<UpdateNextParams>) {
-    db::set_next_id(&state.pool, params.id);
+    match db::set_next_id(&state.pool, params.id).await {
+        Ok(_) => debug!("Updated next ID to {}", params.id),
+        Err(err) => error!("Failed to update next ID: {err}"),
+    };
 }
