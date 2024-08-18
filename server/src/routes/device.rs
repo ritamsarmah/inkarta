@@ -24,11 +24,15 @@ pub fn router() -> Router<AppState> {
 
 /// Returns Unix epoch timestamp in server's timezone for device RTC.
 async fn rtc() -> impl IntoResponse {
-    SystemTime::now()
+    let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs()
-        .to_string()
+        .to_string();
+
+    debug!("Returning timestamp for real-time clock: {timestamp}");
+
+    timestamp
 }
 
 async fn update_next_id(State(state): State<AppState>, Query(params): Query<UpdateNextParams>) {
