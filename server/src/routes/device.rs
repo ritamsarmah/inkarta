@@ -2,7 +2,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use axum::{
     extract::{Query, State},
-    response::IntoResponse,
+    http::StatusCode,
     routing::{get, put},
     Router,
 };
@@ -23,7 +23,7 @@ pub fn router() -> Router<AppState> {
 }
 
 /// Returns Unix epoch timestamp in server's timezone for device RTC.
-async fn rtc() -> impl IntoResponse {
+async fn rtc() -> String {
     let timestamp = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -35,9 +35,18 @@ async fn rtc() -> impl IntoResponse {
     timestamp
 }
 
-async fn update_next_id(State(state): State<AppState>, Query(params): Query<UpdateNextParams>) {
+async fn update_next_id(
+    State(state): State<AppState>,
+    Query(params): Query<UpdateNextParams>,
+) -> StatusCode {
     match db::set_next_id(&state.pool, params.id).await {
-        Ok(_) => debug!("Updated next ID to {}", params.id),
-        Err(err) => error!("Failed to update next ID: {err}"),
-    };
+        Ok(_) => {
+            debug!("Updated next ID to {}", params.id);
+            StatusCode::OK
+        }
+        Err(err) => {
+            error!("Failed to update next ID: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR
+        }
+    }
 }
