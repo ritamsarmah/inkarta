@@ -1,1 +1,3 @@
+AllowShortBlocksOnASingleLine: Always
+AllowShortIfStatementsOnASingleLine: Always
 IndentWidth: 4

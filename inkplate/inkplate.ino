@@ -1,5 +1,5 @@
 #if !defined(ARDUINO_INKPLATE10) && !defined(ARDUINO_INKPLATE10V2)
-#error \
+#error                                                                         \
     "Wrong board selection for this example, please select e-radionica Inkplate10 or Soldered Inkplate10 in the boards menu."
 #endif
 
@@ -17,29 +17,26 @@ const double lowBatteryVoltage = 3.4;
 const int16_t widthPx = display.height();
 const int16_t heightPx = display.width();
 
-const char *host = "192.168.1.5";
+const char *host = "192.168.1.25";
 const uint16_t port = 5000;
 
 /* Utilities */
 
 // Initializes real-time clock using server
-void setRtc() {
-    if (display.rtcIsSet())
-        return;
+int setRtc() {
+    if (display.rtcIsSet()) return 0;
 
     char url[256];
     sprintf(url, "http://%s:%d/device/rtc", host, port);
 
     HTTPClient http;
-    if (http.begin(url) && http.GET() > 0) {
+    if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
         int epoch = http.getString().toInt();
         display.rtcSetEpoch(epoch);
+        return 0;
+    } 
 
-        display.println("Set RTC Epoch:" + String(epoch));
-        display.display();
-    }
-    else {
-    }
+    return -1;
 }
 
 /* Main */
@@ -52,7 +49,7 @@ void setup() {
     display.setTextColor(BLACK);
 
     // Clear alarm flag from any previous alarm
-    display.rtcClearAlarmFlag:);
+    display.rtcClearAlarmFlag();
 
     // Check for low battery
     double voltage = display.readBattery();
@@ -66,7 +63,12 @@ void setup() {
     // Connect to Wi-Fi (waits until connected)
     display.connectWiFi(ssid, password);
 
-    setRtc();
+    if (setRtc() < 0) {
+        display.println("Failed to set real time clock");
+        display.display();
+        esp_deep_sleep_start();
+        return;
+    }
 
     // Download and draw artwork
     // NOTE: Only can use Windows Bitmap file with color depth of 1, 4, 8 or 24
