@@ -55,11 +55,22 @@
         </nav>
         <!-- Image Gallery -->
         <main>
-            <style>me { margin-top: 2rem; }</style>
+            <!-- <style>me { margin-top: 2rem; }</style> -->
+            <div>
+                <style>
+                        me {
+                            text-align: center;
+                            color: var(--gray-300);
+
+                            @media dark { & { color: var(--gray-700); } }
+                        }
+                </style>
+                {{ thumbnails|length }} images
+            </div>
             {% if thumbnails|length > 0 %}
                 <div>
                     <style>
-                    me { display: grid; gap: 1rem; }
+                    me { display: grid; gap: 1rem; margin-top: 2rem; }
                     @media sm { me { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
                     @media md { me { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
                     @media lg { me { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
@@ -86,8 +97,8 @@
                                 @media dark { me:hover { background-color: var(--gray-800); } }
 
                                 me img { width: 16rem; height: 16rem; object-fit: contain; }
-                                me p[n1] { font-weight: 500; margin-bottom: 0.25rem; }
-                                me p[n2] { font-weight: 300; color: var(--gray-400); }
+                                me p[n1] { margin-bottom: 0.25rem; }
+                                me p[n2] { color: var(--gray-400); }
                             </style>
                             <img src="{{ thumbnail.src }}" />
                             <div>
@@ -96,17 +107,6 @@
                             </div>
                         </a>
                     {% endfor %}
-                </div>
-            {% else %}
-                <div>
-                    <style>
-                            me {
-                                text-align: center;
-                                color: var(--gray-400);
-                                font-style: italic;
-                            }
-                    </style>
-                    No images found
                 </div>
             {% endif %}
         </main>

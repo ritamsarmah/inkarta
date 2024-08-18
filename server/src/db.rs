@@ -73,10 +73,15 @@ pub async fn get_random_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
 }
 
 pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Option<Vec<Thumbnail>> {
-    sqlx::query_as("select id, title, artist, thumbnail from images")
-        .fetch_all(pool)
-        .await
-        .ok()
+    sqlx::query_as(
+        "
+        select id, title, artist, thumbnail from images
+        order by artist asc
+        ",
+    )
+    .fetch_all(pool)
+    .await
+    .ok()
 }
 
 pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
