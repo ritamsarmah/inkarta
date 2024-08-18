@@ -31,8 +31,23 @@ bool setRtc() {
 
     HTTPClient http;
     if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
-        uint32_t epoch = http.getString().toInt();
+        int epoch = http.getString().toInt();
         display.rtcSetEpoch(epoch);
+        return true;
+    }
+
+    return false;
+}
+
+// Set alarm for next display refresh using server
+bool setAlarm() {
+    char url[256];
+    sprintf(url, "http://%s:%d/device/alarm", host, port);
+
+    HTTPClient http;
+    if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
+        int epoch = http.getString().toInt();
+        display.rtcSetAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
         return true;
     }
 
@@ -90,16 +105,14 @@ void setup() {
     // Refresh display to show artwork
     display.display();
 
+    // Set next display refresh alarm
+    if (!setAlarm()) {
+        displayError("Failed to set alarm");
+        return;
+    }
+
     // Disconnect Wi-Fi
     display.disconnect();
-
-    // Set wakeup at a second before midnight (11:59:59 PM)
-    // Delay lets enough time pass to schedule during the next day (for the
-    // correct day/weekday)
-    delay(5000);
-    display.rtcGetRtcData();
-    display.rtcSetAlarm(59, 59, 23, display.rtcGetDay(),
-                        display.rtcGetWeekday());
 
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_36,
                                  LOW); // Enable wake via wake button

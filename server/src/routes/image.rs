@@ -200,7 +200,10 @@ fn resize_into_bitmap(image: Image, width: Option<u32>, height: Option<u32>) -> 
     let bmp = load_from_memory(&image.data).unwrap();
 
     if let (Some(width), Some(height)) = (width, height) {
-        debug!("Returning image resized to {width} x {height}");
+        debug!(
+            "Returning image \"{title}\" resized to {width} x {height}",
+            title = image.title
+        );
 
         let resized = bmp.resize(width, height, FilterType::Lanczos3);
 
@@ -214,7 +217,10 @@ fn resize_into_bitmap(image: Image, width: Option<u32>, height: Option<u32>) -> 
         overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
         composite.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
     } else {
-        debug!("Returning full-sized image");
+        debug!(
+            "Returning image \"{title}\" at full resolution",
+            title = image.title
+        );
         bmp.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
     }
 
