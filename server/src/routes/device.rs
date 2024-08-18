@@ -30,7 +30,7 @@ async fn rtc() -> impl IntoResponse {
         .as_secs()
         .to_string();
 
-    debug!("Returning timestamp for real-time clock: {timestamp}");
+    debug!("Returning timestamp for real time clock: {timestamp}");
 
     timestamp
 }
