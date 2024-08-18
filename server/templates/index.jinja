@@ -55,15 +55,14 @@
         </nav>
         <!-- Image Gallery -->
         <main>
-            <!-- <style>me { margin-top: 2rem; }</style> -->
             <div>
                 <style>
-                        me {
-                            text-align: center;
-                            color: var(--gray-300);
+                    me {
+                        text-align: center;
+                        color: var(--gray-300);
 
-                            @media dark { & { color: var(--gray-700); } }
-                        }
+                        @media dark { & { color: var(--gray-700); } }
+                    }
                 </style>
                 {{ thumbnails|length }} images
             </div>
@@ -111,4 +110,32 @@
             {% endif %}
         </main>
     </div>
+    <script>
+        function preventDefault(e) {
+            e.preventDefault();
+        }
+
+        /**
+         * Disable scrolling if modal is visible.
+         */
+        function toggleScrolling() {
+            const isModalVisible = document.getElementById("modal") != null;
+            document.body.style.overflow = isModalVisible ? "hidden" : "";
+            document.body.style.overflowY = isModalVisible ? "hidden" : "";
+
+            if (isModalVisible) {
+                document.body.addEventListener('touchmove', preventDefault, { passive: false });
+                document.body.addEventListener('wheel', preventDefault, { passive: false });
+            } else {
+                document.body.removeEventListener('touchmove', preventDefault);
+                document.body.removeEventListener('wheel', preventDefault);
+            }
+        }
+
+        toggleScrolling();
+
+        // Observe for changes in DOM
+        const observer = new MutationObserver(toggleScrolling);
+        observer.observe(document.body, { childList: true, subtree: true });
+    </script>
 {% endblock %}
