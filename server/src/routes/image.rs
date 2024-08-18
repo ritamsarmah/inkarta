@@ -38,7 +38,7 @@ pub fn router() -> Router<AppState> {
         .route("/image/next/:id", put(set_next_id))
 }
 
-/// Get raw image data scaled to an optional height and width
+/// Get raw image data for specified identifier, optionally resized
 async fn get_image(
     Path(id): Path<Identifier>,
     Query(query): Query<ImageSizeParams>,
@@ -56,24 +56,7 @@ async fn get_image(
     }
 }
 
-/// Delete image with specified identifier
-async fn delete_image(
-    Path(id): Path<Identifier>,
-    State(state): State<AppState>,
-) -> impl IntoResponse {
-    match db::delete_image(&state.pool, id).await {
-        Ok(_) => {
-            debug!("Successfully deleted image with id: {id}");
-
-            let mut headers = HeaderMap::new();
-            headers.insert("HX-Refresh", HeaderValue::from_static("true"));
-            (StatusCode::OK, headers).into_response()
-        }
-        Err(err) => server_error(err).into_response(),
-    }
-}
-
-/// Get next image for display
+/// Get raw image data for next image to display, optionally resized
 async fn get_next_image(
     Query(query): Query<ImageSizeParams>,
     State(state): State<AppState>,
@@ -127,6 +110,7 @@ async fn set_next_id(
     }
 }
 
+/// Create image
 async fn create_image(
     State(state): State<AppState>,
     mut multipart: Multipart,
@@ -168,6 +152,25 @@ async fn create_image(
         (StatusCode::BAD_REQUEST, "Failed to upload image".to_owned()).into_response()
     }
 }
+
+/// Delete image with specified identifier
+async fn delete_image(
+    Path(id): Path<Identifier>,
+    State(state): State<AppState>,
+) -> impl IntoResponse {
+    match db::delete_image(&state.pool, id).await {
+        Ok(_) => {
+            debug!("Successfully deleted image with id: {id}");
+
+            let mut headers = HeaderMap::new();
+            headers.insert("HX-Refresh", HeaderValue::from_static("true"));
+            (StatusCode::OK, headers).into_response()
+        }
+        Err(err) => server_error(err).into_response(),
+    }
+}
+
+/* Utilities */
 
 fn process_image(
     data: &Bytes,

@@ -156,6 +156,7 @@ pub async fn get_current_title(pool: &Pool<Sqlite>) -> Option<String> {
         select images.title
         from device
         left join images on device.current = images.id
+        where images.id is not null
         limit 1
         ",
     )
@@ -171,6 +172,7 @@ pub async fn get_next_title(pool: &Pool<Sqlite>) -> Option<String> {
         select images.title
         from device
         left join images on device.next = images.id
+        where images.id is not null
         limit 1
         ",
     )

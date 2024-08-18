@@ -7,6 +7,7 @@ use axum::{
 use base64::prelude::*;
 use minijinja::context;
 use serde::Serialize;
+use tracing::debug;
 
 use crate::{db, model::Identifier, state::AppState};
 
@@ -73,6 +74,9 @@ async fn partial_upload(State(state): State<AppState>) -> Html<String> {
 async fn partial_device(State(state): State<AppState>) -> Html<String> {
     let current_title = db::get_current_title(&state.pool).await;
     let next_title = db::get_next_title(&state.pool).await;
+
+    debug!("Current title: {current_title:?}");
+    debug!("Next title: {next_title:?}");
 
     let env = state.reloader.acquire_env().unwrap();
     let template = env.get_template("partials/device.jinja").unwrap();
