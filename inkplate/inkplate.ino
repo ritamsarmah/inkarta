@@ -23,20 +23,27 @@ const uint16_t port = 5000;
 /* Utilities */
 
 // Initializes real-time clock using server
-int setRtc() {
-    if (display.rtcIsSet()) return 0;
+bool setRtc() {
+    if (display.rtcIsSet()) return true;
 
     char url[256];
     sprintf(url, "http://%s:%d/device/rtc", host, port);
 
     HTTPClient http;
     if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
-        int epoch = http.getString().toInt();
+        uint32_t epoch = http.getString().toInt();
         display.rtcSetEpoch(epoch);
-        return 0;
-    } 
+        return true;
+    }
 
-    return -1;
+    return false;
+}
+
+// Print error message and sleep display
+void displayError(const char *message) {
+    display.println(message);
+    display.display();
+    esp_deep_sleep_start();
 }
 
 /* Main */
@@ -54,31 +61,29 @@ void setup() {
     // Check for low battery
     double voltage = display.readBattery();
     if (voltage < lowBatteryVoltage) {
-        display.println("Low Battery - Recharge Now");
-        display.display();
-        esp_deep_sleep_start();
+        displayError("Low Battery - Recharge Now");
         return;
     }
 
     // Connect to Wi-Fi (waits until connected)
-    display.connectWiFi(ssid, password);
+    if (!display.connectWiFi(ssid, password)) {
+        displayError("Failed to connect to Wi-Fi");
+        return;
+    }
 
-    if (setRtc() < 0) {
-        display.println("Failed to set real time clock");
-        display.display();
-        esp_deep_sleep_start();
+    // Set real-time clock if needed
+    if (!setRtc()) {
+        displayError("Failed to set real time clock");
         return;
     }
 
     // Download and draw artwork
-    // NOTE: Only can use Windows Bitmap file with color depth of 1, 4, 8 or 24
-    // bits with no compression
+    // Only use Windows Bitmap file with color depth of 1/4/8/24 bits with no compression
     char url[256];
-    sprintf(url, "http://%s:%d/image?w=%d&h=%d", host, port, widthPx, heightPx);
-    if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
-        display.println("Error downloading artwork");
-        display.display();
-        esp_deep_sleep_start();
+    sprintf(url, "http://%s:%d/image/next?width=%d&height=%d", host, port,
+            widthPx, heightPx);
+    if (!display.drawImage(url, display.BMP, 0, 0, false, true)) {
+        displayError("Error downloading artwork");
         return;
     }
 
