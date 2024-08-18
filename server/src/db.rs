@@ -20,6 +20,8 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
             foreign key(next) references images(id),
             foreign key(current) references images(id)
         );
+
+        insert into device (next, current) values (null, null);
         ",
     )
     .execute(pool)

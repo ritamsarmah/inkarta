@@ -154,17 +154,12 @@ async fn create_image(
         };
     }
 
-    // Process image in the background and return immediately
     if let (Some(title), Some(artist)) = (title, artist) {
-        tokio::spawn(async move {
-            let background: u8 = if dark { 0 } else { 255 };
-            match db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail)
-                .await
-            {
-                Ok(_) => debug!("Created new image"),
-                Err(err) => error!("Failed to create image: {err}"),
-            }
-        });
+        let background: u8 = if dark { 0 } else { 255 };
+        match db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail).await {
+            Ok(_) => debug!("Created new image"),
+            Err(err) => error!("Failed to create image: {err}"),
+        }
 
         let mut headers = HeaderMap::new();
         headers.insert("HX-Refresh", HeaderValue::from_static("true"));
