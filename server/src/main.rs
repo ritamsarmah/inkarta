@@ -4,7 +4,7 @@ use anyhow::Result;
 use axum::{extract::DefaultBodyLimit, Router};
 use minijinja_autoreload::AutoReloader;
 use server::{db, routes, state::AppState};
-use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
 use tokio::net::TcpListener;
 
 const DATABASE_URL: &str = "inkarta.db";
@@ -37,7 +37,8 @@ async fn main() -> Result<()> {
 async fn create_database_pool() -> Result<sqlx::Pool<sqlx::Sqlite>> {
     let options = SqliteConnectOptions::new()
         .filename(DATABASE_URL)
-        .create_if_missing(true);
+        .create_if_missing(true)
+        .disable_statement_logging();
     let pool = SqlitePool::connect_with(options).await?;
 
     db::initialize(&pool).await?;

@@ -66,8 +66,13 @@ async fn get_next_image(
     // Retrieve next image (or random image ID if no next value set)
     let next_id = match db::get_next_id(pool).await {
         Some(id) => Some(id),
-        None => db::get_random_id(pool).await,
+        None => {
+            debug!("No next ID found, selecting random ID");
+            db::get_random_id(pool).await
+        }
     };
+
+    debug!("Next image ID: {next_id:?}");
 
     if let Some(id) = next_id {
         match db::get_image(pool, id).await {

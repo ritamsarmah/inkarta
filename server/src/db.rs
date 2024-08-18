@@ -17,8 +17,8 @@ pub async fn initialize(pool: &Pool<Sqlite>) -> Result<SqliteQueryResult> {
         create table if not exists device (
             next integer,
             current integer,
-            foreign key(next) references images(id),
-            foreign key(current) references images(id)
+            foreign key(next) references images(id) on delete set null,
+            foreign key(current) references images(id) on delete set null
         );
 
         insert into device (next, current) values (null, null);
@@ -85,17 +85,6 @@ pub async fn get_thumbnails(pool: &Pool<Sqlite>) -> Option<Vec<Thumbnail>> {
 }
 
 pub async fn delete_image(pool: &Pool<Sqlite>, id: Identifier) -> Result<()> {
-    // Reset the current or next images in the device table if they are set to the ID to delete
-    sqlx::query("update device set current = null where current = ?")
-        .bind(id)
-        .execute(pool)
-        .await?;
-
-    sqlx::query("update device set next = null where next = ?")
-        .bind(id)
-        .execute(pool)
-        .await?;
-
     sqlx::query("delete from images where id = ?")
         .bind(id)
         .execute(pool)
