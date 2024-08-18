@@ -3,7 +3,7 @@
 This repository includes two parts for a wirelessly configurable e-ink picture frame:
 
 1. Arduino sketch for the Inkplate ESP32-based e-paper display
-2. Web server for image serving and dashboard for image management
+2. Web server for managing image database via web dashboard
 
 ## Features
 
