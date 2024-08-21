@@ -93,11 +93,10 @@ void setup() {
     }
 
     // Download and draw artwork
-    // Only use Windows Bitmap file with color depth of 1/4/8/24 bits with no compression
     char url[256];
     sprintf(url, "http://%s:%d/image/next?width=%d&height=%d", host, port,
             widthPx, heightPx);
-    if (!display.drawImage(url, display.BMP, 0, 0, false, true)) {
+    if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
         displayError("Error downloading artwork");
         return;
     }
@@ -114,8 +113,7 @@ void setup() {
     // Disconnect Wi-Fi
     display.disconnect();
 
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_36,
-                                 LOW); // Enable wake via wake button
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enable wake via wake button
     esp_sleep_enable_ext1_wakeup(
         int64_t(1) << GPIO_NUM_39,
         ESP_EXT1_WAKEUP_ALL_LOW); // Enable wake via RTC interrupt alarm

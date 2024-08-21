@@ -67,7 +67,7 @@ async fn get_next_image(
     let next_id = match db::get_next_id(pool).await {
         Some(id) => Some(id),
         None => {
-            debug!("No next ID found, selecting random ID");
+            debug!("No next ID set. Selecting random ID");
             db::get_random_id(pool).await
         }
     };
@@ -184,7 +184,7 @@ fn process_image(
     let mut bmp = load_from_memory(data)
         .context("Failed to load image data")?
         .grayscale()
-        .to_luma8();
+        .into_luma8();
 
     dither(&mut bmp, &BiLevel);
 
