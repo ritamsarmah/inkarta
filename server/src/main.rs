@@ -2,7 +2,6 @@ use std::{path::Path, sync::Arc};
 
 use anyhow::Result;
 use axum::{extract::DefaultBodyLimit, Router};
-use minijinja_autoreload::AutoReloader;
 use server::{db, routes, state::AppState};
 use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
 use tokio::net::TcpListener;
@@ -18,7 +17,7 @@ async fn main() -> Result<()> {
         .init();
 
     let state = AppState {
-        reloader: Arc::new(create_template_reloader()),
+        templates: Arc::new(create_template_env()),
         pool: create_database_pool().await?,
     };
 
@@ -50,24 +49,25 @@ async fn create_database_pool() -> Result<sqlx::Pool<sqlx::Sqlite>> {
     Ok(pool)
 }
 
-fn create_template_reloader() -> AutoReloader {
-    let reloader = AutoReloader::new(move |notifier| {
-        let template_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates");
-        let mut env = minijinja::Environment::new();
-        env.set_loader(minijinja::path_loader(&template_path));
+fn create_template_env() -> minijinja::Environment<'static> {
+    let mut env = minijinja::Environment::new();
+    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates");
+    env.set_loader(minijinja::path_loader(path));
 
-        notifier.set_fast_reload(true);
-        notifier.watch_path(&template_path, true);
-
-        Ok(env)
-    });
-
-    reloader
+    env
 }
 
-// fn create_template_env() -> minijinja::Environment<'static> {
-// let mut env = minijinja::Environment::new();
-// let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates");
-// // TODO: Setup dynamic loader
-// env.set_loader(minijinja::path_loader(path));
+// fn create_template_reloader() -> AutoReloader {
+//     let reloader = AutoReloader::new(move |notifier| {
+//         let template_path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates");
+//         let mut env = minijinja::Environment::new();
+//         env.set_loader(minijinja::path_loader(&template_path));
+
+//         notifier.set_fast_reload(true);
+//         notifier.watch_path(&template_path, true);
+
+//         Ok(env)
+//     });
+
+//     reloader
 // }

@@ -4,7 +4,6 @@ use sqlx::{Pool, Sqlite};
 
 #[derive(Clone)]
 pub struct AppState {
-    // pub templates: Arc<minijinja::Environment<'static>>,
-    pub reloader: Arc<minijinja_autoreload::AutoReloader>,
+    pub templates: Arc<minijinja::Environment<'static>>,
     pub pool: Pool<Sqlite>,
 }

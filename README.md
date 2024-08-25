@@ -3,14 +3,14 @@
 This repository includes two parts for a wirelessly configurable e-ink picture frame:
 
 1. Arduino sketch for the Inkplate ESP32-based e-paper display
-2. Web server for managing image database via web dashboard
+2. Server for hosting and managing images via web interface
 
 ## Features
 
 - Automatically changes the picture at midnight
 - Enters low power mode until next refresh (or wake button triggers manual refresh) so battery lasts a *long* time.
-- Flask server supports processing, storing, and retrieving images via REST API
-- App provides an easy-to-use interface for managing images and metadata
+- Server supports processing, storing, and retrieving images
+- Web dashboard for image management
 
 ## Getting Started
 

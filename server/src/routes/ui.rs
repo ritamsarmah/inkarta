@@ -42,8 +42,7 @@ async fn gallery(State(state): State<AppState>) -> Html<String> {
         .collect();
 
     // TODO: Paginate with infinite scroll?
-    let env = state.reloader.acquire_env().unwrap();
-    let template = env.get_template("index.jinja").unwrap();
+    let template = state.templates.get_template("index.jinja").unwrap();
     let html = template
         .render(context! {
             thumbnails => thumbnails,
@@ -54,8 +53,7 @@ async fn gallery(State(state): State<AppState>) -> Html<String> {
 }
 
 async fn not_found(State(state): State<AppState>) -> Html<String> {
-    let env = state.reloader.acquire_env().unwrap();
-    let template = env.get_template("404.jinja").unwrap();
+    let template = state.templates.get_template("404.jinja").unwrap();
     let html = template.render(()).unwrap();
 
     Html(html)
@@ -64,8 +62,10 @@ async fn not_found(State(state): State<AppState>) -> Html<String> {
 /* Partials */
 
 async fn partial_upload(State(state): State<AppState>) -> Html<String> {
-    let env = state.reloader.acquire_env().unwrap();
-    let template = env.get_template("partials/upload.jinja").unwrap();
+    let template = state
+        .templates
+        .get_template("partials/upload.jinja")
+        .unwrap();
     let html = template.render(()).unwrap();
 
     Html(html)
@@ -78,8 +78,10 @@ async fn partial_device(State(state): State<AppState>) -> Html<String> {
     debug!("Current title: {current_title:?}");
     debug!("Next title: {next_title:?}");
 
-    let env = state.reloader.acquire_env().unwrap();
-    let template = env.get_template("partials/device.jinja").unwrap();
+    let template = state
+        .templates
+        .get_template("partials/device.jinja")
+        .unwrap();
     let html = template
         .render(context! {
             current => current_title,
@@ -94,9 +96,10 @@ async fn partial_image(Path(id): Path<Identifier>, State(state): State<AppState>
     let html = match db::get_image(&state.pool, id).await {
         Ok(image) => {
             let next_id = db::get_next_id(&state.pool).await;
-
-            let env = state.reloader.acquire_env().unwrap();
-            let template = env.get_template("partials/image.jinja").unwrap();
+            let template = state
+                .templates
+                .get_template("partials/image.jinja")
+                .unwrap();
 
             template
                 .render(context! {
