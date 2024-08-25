@@ -45,13 +45,7 @@ async fn get_image(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     match db::get_image(&state.pool, id).await {
-        Ok(image) => {
-            let buffer = resize_into_bitmap(image, query.width, query.height);
-            Response::builder()
-                .header(header::CONTENT_TYPE, "image/bmp")
-                .body(Body::from(buffer.into_inner()))
-                .unwrap()
-        }
+        Ok(image) => create_bitmap_response(image, query.width, query.height),
         Err(err) => not_found_error(err).into_response(),
     }
 }
@@ -86,11 +80,7 @@ async fn get_next_image(
                     error!("Failed to update random next ID: {err}");
                 }
 
-                let buffer = resize_into_bitmap(next_image, query.width, query.height);
-                Response::builder()
-                    .header(header::CONTENT_TYPE, "image/bmp")
-                    .body(Body::from(buffer.into_inner()))
-                    .unwrap()
+                create_bitmap_response(next_image, query.width, query.height)
             }
             Err(err) => server_error(err).into_response(),
         }
@@ -200,7 +190,7 @@ fn process_image(
     Ok(())
 }
 
-fn resize_into_bitmap(image: Image, width: Option<u32>, height: Option<u32>) -> Cursor<Vec<u8>> {
+fn create_bitmap_response(image: Image, width: Option<u32>, height: Option<u32>) -> Response<Body> {
     let mut buffer = Cursor::new(Vec::new());
     let bmp = load_from_memory(&image.data).unwrap();
 
@@ -229,5 +219,9 @@ fn resize_into_bitmap(image: Image, width: Option<u32>, height: Option<u32>) -> 
         bmp.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
     }
 
-    buffer
+    Response::builder()
+        .header(header::CONTENT_TYPE, "image/bmp")
+        .header(header::CONTENT_LENGTH, buffer.get_ref().len())
+        .body(Body::from(buffer.into_inner()))
+        .unwrap()
 }

@@ -6,6 +6,7 @@ use minijinja_autoreload::AutoReloader;
 use server::{db, routes, state::AppState};
 use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
 use tokio::net::TcpListener;
+use tracing::debug;
 
 const DATABASE_URL: &str = "inkarta.db";
 const TCP_PORT: u16 = 5000;
@@ -28,7 +29,10 @@ async fn main() -> Result<()> {
         .layer(DefaultBodyLimit::disable()) // Disable body limit to allow large image uploads
         .with_state(state);
 
-    let listener = TcpListener::bind(format!("0.0.0.0:{TCP_PORT}")).await?;
+    let addr = format!("0.0.0.0:{TCP_PORT}");
+    let listener = TcpListener::bind(&addr).await?;
+
+    debug!("Listening on {addr}");
     axum::serve(listener, app).await?;
 
     Ok(())
