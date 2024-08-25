@@ -9,9 +9,7 @@ use axum::{
     routing::{get, post, put},
     Router,
 };
-use image::{
-    imageops::*, load_from_memory, DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Luma,
-};
+use image::{imageops, load_from_memory, DynamicImage, ImageBuffer, ImageFormat, Luma};
 use serde::Deserialize;
 use tracing::{debug, error};
 
@@ -45,7 +43,7 @@ async fn get_image(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     match db::get_image(&state.pool, id).await {
-        Ok(image) => create_image_response(image, query.width, query.height),
+        Ok(image) => create_image_response(image, query),
         Err(err) => not_found_error(err).into_response(),
     }
 }
@@ -80,7 +78,7 @@ async fn get_next_image(
                     error!("Failed to update random next ID: {err}");
                 }
 
-                create_image_response(next_image, query.width, query.height)
+                create_image_response(next_image, query)
             }
             Err(err) => server_error(err).into_response(),
         }
@@ -170,16 +168,14 @@ fn process_image(
     image_buffer: &mut Vec<u8>,
     thumbnail_buffer: &mut Vec<u8>,
 ) -> Result<()> {
-    // Create main bitmap image
-    let mut image = load_from_memory(data)
+    // Create main image
+    let image = load_from_memory(data)
         .context("Failed to load image data")?
         .grayscale()
         .into_luma8();
 
-    dither(&mut image, &BiLevel);
-
     let mut cursor = Cursor::new(image_buffer);
-    image.write_to(&mut cursor, ImageFormat::Bmp)?;
+    image.write_to(&mut cursor, ImageFormat::Png)?;
 
     // Create thumbnail image
     let thumbnail = DynamicImage::ImageLuma8(image).thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
@@ -190,9 +186,12 @@ fn process_image(
     Ok(())
 }
 
-fn create_image_response(image: Image, width: Option<u32>, height: Option<u32>) -> Response<Body> {
+fn create_image_response(image: Image, query: ImageSizeParams) -> Response<Body> {
+    let width = query.width;
+    let height = query.height;
+
     let mut buffer = Cursor::new(Vec::new());
-    let bmp = load_from_memory(&image.data).unwrap();
+    let original = load_from_memory(&image.data).unwrap();
 
     if let (Some(width), Some(height)) = (width, height) {
         debug!(
@@ -200,27 +199,31 @@ fn create_image_response(image: Image, width: Option<u32>, height: Option<u32>) 
             title = image.title
         );
 
-        let resized = bmp.resize(width, height, FilterType::Lanczos3);
+        // NOTE: Do not use Lanczo3 cause it generates image that cannot be processed by Inkplate
+        let resized = original
+            .resize(width, height, imageops::FilterType::Triangle)
+            .into_luma8();
 
         let background = ImageBuffer::from_pixel(width, height, Luma([image.background]));
-        let mut composite = DynamicImage::ImageLuma8(background);
+        let mut composite = DynamicImage::ImageLuma8(background).into_luma8();
 
         let (new_width, new_height) = resized.dimensions();
         let x_offset = (width - new_width) / 2;
         let y_offset = (height - new_height) / 2;
 
-        overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
-        composite.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
+        imageops::overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
+        composite.write_to(&mut buffer, ImageFormat::Png).unwrap();
     } else {
         debug!(
             "Returning image \"{title}\" at full resolution",
             title = image.title
         );
-        bmp.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
+
+        original.write_to(&mut buffer, ImageFormat::Png).unwrap();
     }
 
     Response::builder()
-        .header(header::CONTENT_TYPE, "image/bmp")
+        .header(header::CONTENT_TYPE, "image/png")
         .header(header::CONTENT_LENGTH, buffer.get_ref().len())
         .body(Body::from(buffer.into_inner()))
         .unwrap()

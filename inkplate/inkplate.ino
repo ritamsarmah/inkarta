@@ -6,7 +6,7 @@
 #include "Inkplate.h"
 #include "secrets.h"
 
-Inkplate display(INKPLATE_1BIT);
+Inkplate display(INKPLATE_3BIT);
 
 /* Globals */
 
@@ -93,7 +93,7 @@ void setup() {
     char url[256];
     sprintf(url, "http://%s:%d/image/next?width=%d&height=%d", host, port,
             widthPx, heightPx);
-    if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
+    if (!display.drawImage(url, display.PNG, 0, 0, false, false)) {
         displayError("Error downloading artwork");
         return;
     }

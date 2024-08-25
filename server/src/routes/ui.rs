@@ -37,7 +37,7 @@ async fn gallery(State(state): State<AppState>) -> Html<String> {
             title: thumbnail.title,
             artist: thumbnail.artist,
             href: format!("/ui/image/{}", thumbnail.id),
-            src: to_src(thumbnail.thumbnail),
+            src: to_src(thumbnail.thumbnail, "jpeg"),
         })
         .collect();
 
@@ -103,7 +103,7 @@ async fn partial_image(Path(id): Path<Identifier>, State(state): State<AppState>
                     id => image.id,
                     title => image.title,
                     artist => image.artist,
-                    src => to_src(image.data),
+                    src => to_src(image.data, "png"),
                     next_id => next_id
                 })
                 .unwrap()
@@ -116,6 +116,10 @@ async fn partial_image(Path(id): Path<Identifier>, State(state): State<AppState>
 
 /* Utilities */
 
-fn to_src(data: Vec<u8>) -> String {
-    format!("data:image/bmp;base64,{}", BASE64_STANDARD.encode(data))
+fn to_src(data: Vec<u8>, format: &str) -> String {
+    format!(
+        "data:image/{};base64,{}",
+        format,
+        BASE64_STANDARD.encode(data)
+    )
 }
