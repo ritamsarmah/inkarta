@@ -100,7 +100,7 @@ pub async fn get_next_id(pool: &Pool<Sqlite>) -> Option<Identifier> {
     sqlx::query_scalar(
         "
         select next from device
-        where images.id is not null
+        where next is not null
         limit 1
         ",
     )
