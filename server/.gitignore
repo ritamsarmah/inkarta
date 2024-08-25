@@ -1,0 +1,4 @@
+/assets
+/target
+.sqlx
+*.db

@@ -1,0 +1,109 @@
+{% extends "modal.jinja" %}
+{% block modal %}
+    <form hx-post="/image"
+          enctype="multipart/form-data"
+          hx-indicator=".htmx-upload">
+        <style>
+            me { 
+                display: flex;
+                flex-direction: column;
+                gap: 1rem;
+            }
+        </style>
+        <!-- Image Upload Button -->
+        <div class="btn">
+            <style>me input { display: none; visibility: hidden; }</style>
+            Select Image
+            <input type="file" name="image" accept="image/*" />
+            <script>
+                me().on("click", ev => me("input").click());
+
+                // Set preview image, hide button, and show rest of form
+                me("input").on("change", ev => {
+                    const file = ev.target.files[0];
+                    if (file) {
+                        me("#preview").src = URL.createObjectURL(file);
+                        me("#details-form").styles({ "display": "flex" });
+                        me(ev).parentElement.styles({ "display": "none" });
+                    }
+                });
+            </script>
+        </div>
+        <!-- Details Form -->
+        <div id="details-form">
+            <style>
+                me {
+                    display: none; /* switches to flex after image selection */
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 2rem;
+                }
+
+                me img {
+                    height: 20rem;
+                    width: 100%;
+                    object-fit: contain;
+                }
+            </style>
+            <img id="preview">
+            <div>
+                <style>
+                    me {
+                        display: flex;
+                        flex-direction: column;
+                        text-align: center;
+                        gap: 1rem;
+                    }
+
+                    me input[type="text"] {
+                        background-color: var(--gray-50);
+                        border: 1px solid var(--gray-300);
+                        border-radius: 0.2rem;
+                        padding: 0.25rem;
+                        margin-left: 0.25rem;
+
+                        @media dark {
+                            & {
+                                background-color: var(--gray-700);
+                                border-color: var(--gray-600);
+                            }
+                        }
+                    }
+
+                    me input[type="checkbox"] {
+                        vertical-align: middle;
+                        position: relative;
+                        bottom: 1px;
+                        margin-right: 0.25rem;
+                    }
+
+                    me butt
+                </style>
+                <label>
+                    Title:
+                    <input type="text" name="title" required />
+                </label>
+                <label>
+                    Artist:
+                    <input type="text" name="artist" />
+                </label>
+                <label>
+                    <input type="checkbox" value="on" name="dark" />
+                    Use dark background
+                </label>
+            </div>
+            <button class="htmx-upload btn" type="submit">
+                <style>me.htmx-request { display: none; }</style>
+                Upload
+            </button>
+            <button class="htmx-upload btn" disabled>
+                <style>
+                    me { display: none; }
+                    me.htmx-request { display: block; }
+                </style>
+                Uploading...
+            </button>
+        </div>
+    </form>
+{% endblock %}

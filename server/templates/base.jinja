@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="color-scheme" content="light dark" />
+        <title>
+            {% block title %}{% endblock %}
+        </title>
+        <!-- HTMX -->
+        <script src="https://unpkg.com/htmx.org@2.0.1"></script>
+        <!-- Surreal -->
+        <script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
+        <!-- CSS Scope Inline -->
+        <script>
+        // Based on https://github.com/gnat/css-scope-inline
+        window.cssScopeCount ??= 1 // Let extra copies share the scope count.
+        window.cssScope ??= new MutationObserver(mutations => { // Allow 1 observer.
+            document?.body?.querySelectorAll('style:not([ready])').forEach(node => { // Faster than walking MutationObserver results when recieving subtree (DOM swap, htmx, ajax, jquery).
+                var scope = 'me__'+(window.cssScopeCount++) // Ready. Make unique scope, example: .me__1234
+                node.parentNode.classList.add(scope)
+                node.textContent = node.textContent
+                    .replace(/(?:^|\.|(\s|[^a-zA-Z0-9\-\_]))(me|this|self)(?![a-zA-Z])/g, '$1.'+scope) // Can use: me this self
+                    .replace(/((@keyframes|animation:|animation-name:)[^{};]*)\.me__/g, '$1me__') // Removes need to escape names, ex: "\.me"
+                    .replace(/(?:@media)\sdark/g, () => '@media (prefers-color-scheme: dark)') // Dark mode.
+                    .replace(/(?:@media)\s(xs-|sm-|md-|lg-|xl-|sm|md|lg|xl|xx)/g, // Responsive design. Mobile First (above breakpoint): 🟢 None sm md lg xl xx 🏁  Desktop First (below breakpoint): 🏁 xs- sm- md- lg- xl- None 🟢 *- matches must be first!
+                        (match, part1) => { return '@media '+({'sm':'(min-width: 640px)','md':'(min-width: 768px)', 'lg':'(min-width: 1024px)', 'xl':'(min-width: 1280px)', 'xx':'(min-width: 1536px)', 'xs-':'(max-width: 639px)', 'sm-':'(max-width: 767px)', 'md-':'(max-width: 1023px)', 'lg-':'(max-width: 1279px)', 'xl-':'(max-width: 1535px)'}[part1]) }
+                    )
+                node.setAttribute('ready', '')
+            })
+        }).observe(document.documentElement, {childList: true, subtree: true})
+        </script>
+        <!-- Global Styles -->
+        <style>
+            :root {
+                --gray-50: #fafafa;
+                --gray-100: #f4f4f5;
+                --gray-200: #e4e4e7;
+                --gray-300: #d4d4d8;
+                --gray-400: #a1a1aa;
+                --gray-500: #71717a;
+                --gray-600: #52525b;
+                --gray-700: #3f3f46;
+                --gray-800: #27272a;
+                --gray-900: #18181b;
+                --gray-950: #09090b;
+
+                --blue-50: #eff6ff;
+                --blue-100: #dbeafe;
+                --blue-200: #bfdbfe;
+                --blue-300: #93c5fd;
+                --blue-400: #60a5fa;
+                --blue-500: #3b82f6;
+                --blue-600: #2563eb;
+                --blue-700: #1d4ed8;
+                --blue-800: #1e40af;
+                --blue-900: #1e3a8a;
+                --blue-950: #172554;
+
+                --red-500: #EF4444;
+                --red-600: #DC2626;
+                --red-700: #B91C1C;
+            }
+
+            /* CSS Reset */
+            *, *::before, *::after { box-sizing: border-box; -moz-box-sizing: border-box; -webkit-box-sizing: border-box; }
+            * { margin:0; }
+            body { -webkit-font-smoothing: antialiased; }
+            img, picture, video, canvas, svg { display: block; max-width: 100%; }
+            input, button, textarea, select { font: inherit; }
+            p, h1, h2, h3, h4, h5, h6 { overflow-wrap: break-word; }
+            #root, #__next { isolation: isolate; }
+            button { all: unset; cursor: pointer; }
+
+            /* Global */
+
+            a {
+                margin-top: 2rem;
+                text-decoration: underline dotted;
+                color: var(--blue-400);
+
+                &:hover { hover: decoration-solid; }
+            }
+
+            /* title */
+
+            .title {
+                font-size: 1.5rem;
+                font-weight: 300;
+                line-height: 2rem;
+                letter-spacing: 0.3rem;
+                text-transform: uppercase;
+                padding-top: 0.125rem;
+            }
+
+            /* btn */
+
+            .btn {
+                border-radius: 0.375rem;
+                border: 1px solid var(--blue-500);
+                padding-top: 0.75rem;
+                padding-bottom: 0.75rem;
+                padding-left: 1.25rem;
+                padding-right: 1.25rem;
+                text-align: center;
+                color: white;
+                background-color: var(--blue-500);
+                cursor: pointer;
+
+                &:not(:disabled):hover { background-color: var(--blue-600); border-color: var(--blue-600); }
+
+                &:disabled {
+                    background-color: transparent;
+                    border: 1px solid var(--gray-400);
+                    color: var(--gray-400);
+                    cursor: default;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <style>
+            me {
+                padding: 1rem;
+                margin: 0 auto;
+                font-family: sans-serif;
+                background-color: white;
+                max-width: 80rem;
+
+                @media md { & { padding: 2rem; } }
+                @media dark { & { background-color: var(--gray-900) } }
+            }
+        </style>
+        {% block body %}{% endblock %}
+    </body>
+</html>

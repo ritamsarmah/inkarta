@@ -1,11 +1,12 @@
 #if !defined(ARDUINO_INKPLATE10) && !defined(ARDUINO_INKPLATE10V2)
-#error "Wrong board selection for this example, please select e-radionica Inkplate10 or Soldered Inkplate10 in the boards menu."
+#error                                                                         \
+    "Wrong board selection for this example, please select e-radionica Inkplate10 or Soldered Inkplate10 in the boards menu."
 #endif
 
 #include "Inkplate.h"
 #include "secrets.h"
 
-Inkplate display(INKPLATE_1BIT);
+Inkplate display(INKPLATE_3BIT);
 
 /* Globals */
 
@@ -16,91 +17,106 @@ const double lowBatteryVoltage = 3.4;
 const int16_t widthPx = display.height();
 const int16_t heightPx = display.width();
 
-const char *host = "192.168.1.5";
-const uint16_t port = 5000;
-
 /* Utilities */
 
-String getValueForKey(String data, String key) {
-  int keyIndex = data.indexOf(key);
-  if (keyIndex == -1) return "";
+// Initializes real-time clock using server
+bool setRtc() {
+    if (display.rtcIsSet()) return true;
 
-  int valueIndex = data.indexOf(": ", keyIndex) + 2;
-  int endIndex = data.indexOf('\n', valueIndex);
-  
-  return data.substring(valueIndex, endIndex);
+    char url[256];
+    sprintf(url, "http://%s:%d/device/rtc", host, port);
+
+    HTTPClient http;
+    if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
+        int epoch = http.getString().toInt();
+        display.rtcSetEpoch(epoch);
+        return true;
+    }
+
+    return false;
 }
 
-// Sets RTC to current datetime based on WorldTimeAPI
-void rtcSetDateTime() {
-  if (display.rtcIsSet()) return;
+// Set alarm for next display refresh using server
+bool setAlarm() {
+    char url[256];
+    sprintf(url, "http://%s:%d/device/alarm", host, port);
 
-  HTTPClient http;
-  if (http.begin("http://worldtimeapi.org/api/ip.txt") && http.GET() > 0) {
-    String response = http.getString();
-    int epoch = getValueForKey(response, "unixtime").toInt();
-    display.rtcSetEpoch(epoch);
-    
-    display.println("Set RTC Epoch:" + String(epoch));
+    HTTPClient http;
+    if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
+        int epoch = http.getString().toInt();
+        display.rtcSetAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
+        return true;
+    }
+
+    return false;
+}
+
+// Print error message and sleep display
+void displayError(const char *message) {
+    display.println(message);
     display.display();
-  }
+    esp_deep_sleep_start();
 }
 
 /* Main */
 
 void setup() {
-  display.begin();
+    display.begin();
 
-  display.setRotation(3);
-  display.setTextSize(2);
-  display.setTextColor(BLACK);
+    display.setRotation(3);
+    display.setTextSize(2);
+    display.setTextColor(BLACK);
 
-  // Clear alarm flag from any previous alarm
-  display.rtcClearAlarmFlag();
+    // Clear alarm flag from any previous alarm
+    display.rtcClearAlarmFlag();
 
-  // Check for low battery
-  double voltage = display.readBattery();
-  if ( voltage < lowBatteryVoltage ) {
-    display.println("Low Battery - Recharge Now");
+    // Check for low battery
+    double voltage = display.readBattery();
+    if (voltage < lowBatteryVoltage) {
+        displayError("Low Battery - Recharge Now");
+        return;
+    }
+
+    // Connect to Wi-Fi (waits until connected)
+    if (!display.connectWiFi(ssid, password)) {
+        displayError("Failed to connect to Wi-Fi");
+        return;
+    }
+
+    // Set real-time clock if needed
+    if (!setRtc()) {
+        displayError("Failed to set real time clock");
+        return;
+    }
+
+    // Download and draw artwork
+    char url[256];
+    sprintf(url, "http://%s:%d/image/next?width=%d&height=%d", host, port,
+            widthPx, heightPx);
+    if (!display.drawImage(url, display.PNG, 0, 0, false, false)) {
+        displayError("Error downloading artwork");
+        return;
+    }
+
+    // Refresh display to show artwork
     display.display();
+
+    // Set next display refresh alarm
+    if (!setAlarm()) {
+        displayError("Failed to set alarm");
+        return;
+    }
+
+    // Disconnect Wi-Fi
+    display.disconnect();
+
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enable wake via wake button
+    esp_sleep_enable_ext1_wakeup(
+        int64_t(1) << GPIO_NUM_39,
+        ESP_EXT1_WAKEUP_ALL_LOW); // Enable wake via RTC interrupt alarm
     esp_deep_sleep_start();
-    return;
-  }
-  
-  // Connect to Wi-Fi (waits until connected)
-  display.connectWiFi(ssid, password);
-
-  // Set RTC if needed
-  rtcSetDateTime();
-
-  // Download and draw artwork
-  // NOTE: Only can use Windows Bitmap file with color depth of 1, 4, 8 or 24 bits with no compression
-  char url[256];
-  sprintf(url, "http://%s:%d/image?w=%d&h=%d", host, port, widthPx, heightPx);
-  if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
-    display.println("Error downloading artwork");
-    display.display();
-    esp_deep_sleep_start();
-    return;
-  }
-
-  // Refresh display to show artwork
-  display.display();
-
-  // Disconnect Wi-Fi
-  display.disconnect();
- 
-  // Set wakeup at a second before midnight (11:59:59 PM)
-  // Delay lets enough time pass to schedule during the next day (for the correct day/weekday)
-  delay(5000);
-  display.rtcGetRtcData();
-  display.rtcSetAlarm(59, 59, 23, display.rtcGetDay(), display.rtcGetWeekday());
-
-  esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enable wake via wake button
-  esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39, ESP_EXT1_WAKEUP_ALL_LOW); // Enable wake via RTC interrupt alarm
-  esp_deep_sleep_start();
 }
 
 void loop() {
-  // Never here, since deep sleep restarts board every time
+    // Never here, since deep sleep restarts board every time
 }

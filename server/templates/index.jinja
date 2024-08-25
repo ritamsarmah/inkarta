@@ -1,0 +1,141 @@
+{% extends "base.jinja" %}
+{% block body %}
+    <div>
+        <nav>
+            <style>
+                me {
+                    display: flex;
+                    gap: 2rem;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+
+                me button {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 2.5rem;
+                    height: 2.5rem;
+                    color: black;
+                    border-radius: 50%;
+                    padding: 0.25rem;
+
+                    &:hover { background-color: var(--gray-100); }
+
+                    & svg { width: 1.5rem; height: 1.5rem; }
+
+                    @media dark {
+                        & { color: white; }
+                        &:hover { background-color: var(--gray-800); }
+                    }
+                }
+            </style>
+            <!-- Device Info Button -->
+            <button hx-get="/ui/device" hx-target="body" hx-swap="beforeend">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.5"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z" />
+                </svg>
+            </button>
+            <!-- Title -->
+            <h1 class="title">Gallery</h1>
+            <!-- Upload Image Button -->
+            <button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                     fill="none"
+                     viewBox="0 0 24 24"
+                     stroke-width="1.5"
+                     stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+            </button>
+        </nav>
+        <!-- Image Gallery -->
+        <main>
+            <div>
+                <style>
+                    me {
+                        text-align: center;
+                        color: var(--gray-400);
+
+                        @media dark { & { color: var(--gray-600); } }
+                    }
+                </style>
+                {{ thumbnails|length }} image(s)
+            </div>
+            {% if thumbnails|length > 0 %}
+                <div>
+                    <style>
+                    me { display: grid; gap: 1rem; margin-top: 2rem; }
+                    @media sm { me { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+                    @media md { me { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+                    @media lg { me { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+                    </style>
+                    {% for thumbnail in thumbnails %}
+                        <a hx-get="{{ thumbnail.href }}" hx-target="body" hx-swap="beforeend">
+                            <style>
+                                me {
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+                                    justify-content: center;
+                                    text-align: center;
+                                    padding: 1rem;
+                                    border-radius: 0.375rem;
+                                    cursor: pointer;
+                                    text-decoration: none;
+                                    color: var(--gray-900);
+                                }
+                                me > * + * { margin-top: 0.75rem; }
+                                @media dark { me { color: white; } }
+
+                                me:hover { background-color: var(--gray-100); }
+                                @media dark { me:hover { background-color: var(--gray-800); } }
+
+                                me img { width: 16rem; height: 16rem; object-fit: contain; }
+                                me p[n1] { margin-bottom: 0.25rem; }
+                                me p[n2] { color: var(--gray-400); }
+                            </style>
+                            <img src="{{ thumbnail.src }}" />
+                            <div>
+                                <p n1>{{ thumbnail.title }}</p>
+                                <p n2>{{ thumbnail.artist }}</p>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </main>
+    </div>
+    <script>
+        function preventDefault(e) {
+            e.preventDefault();
+        }
+
+        /**
+         * Disable scrolling if modal is visible.
+         */
+        function toggleScrolling() {
+            const isModalVisible = document.getElementById("modal") != null;
+            document.body.style.overflow = isModalVisible ? "hidden" : "";
+            document.body.style.overflowY = isModalVisible ? "hidden" : "";
+
+            if (isModalVisible) {
+                document.body.addEventListener('touchmove', preventDefault, { passive: false });
+                document.body.addEventListener('wheel', preventDefault, { passive: false });
+            } else {
+                document.body.removeEventListener('touchmove', preventDefault);
+                document.body.removeEventListener('wheel', preventDefault);
+            }
+        }
+
+        toggleScrolling();
+
+        // Observe for changes in DOM
+        const observer = new MutationObserver(toggleScrolling);
+        observer.observe(document.body, { childList: true, subtree: true });
+    </script>
+{% endblock %}

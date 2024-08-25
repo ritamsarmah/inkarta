@@ -1,0 +1,10 @@
+default_fqbn: Inkplate_Boards:esp32:Inkplate10V2:UploadSpeed=115200
+default_port: /dev/cu.usbserial-2140
+
+profiles:
+  default:
+    platforms:
+      - platform: Inkplate_Boards:esp32 (8.1.0)
+        platform_index_url: https://github.com/SolderedElectronics/Dasduino-Board-Definitions-for-Arduino-IDE/raw/master/package_Dasduino_Boards_index.json
+    libraries:
+      - InkplateLibrary (10.0.0)
