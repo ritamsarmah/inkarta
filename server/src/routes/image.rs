@@ -169,10 +169,13 @@ fn process_image(
     thumbnail_buffer: &mut Vec<u8>,
 ) -> Result<()> {
     // Create main image
-    let image = load_from_memory(data)
+    let mut image = load_from_memory(data)
         .context("Failed to load image data")?
         .grayscale()
         .into_luma8();
+
+    // Convert to black & white
+    imageops::dither(&mut image, &imageops::BiLevel);
 
     let mut cursor = Cursor::new(image_buffer);
     image.write_to(&mut cursor, ImageFormat::Png)?;
