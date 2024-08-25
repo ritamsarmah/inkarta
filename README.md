@@ -1,16 +1,16 @@
 # Inkarta
 
-This repository includes two parts for a wirelessly configurable e-ink picture frame:
+This repository contains two components for a wirelessly configurable e-ink picture frame:
 
-1. Arduino sketch for the Inkplate ESP32-based e-paper display
-2. Server for hosting and managing images via web interface
+1. Arduino sketch for the Inkplate ESP32-based e-paper display.
+2. Server for managing and hosting images via a web interface.
 
 ## Features
 
-- Automatically changes the picture at midnight
-- Enters low power mode until next refresh (or wake button triggers manual refresh) so battery lasts a *long* time.
-- Server supports processing, storing, and retrieving images
-- Web dashboard for image management
+- Automatically updates the picture at midnight.
+- Enters low power mode until the next refresh or a manual refresh is triggered by pressing the wake button, extending battery life for several months.
+- Server handles image processing and storage to a SQLite database.
+- Web dashboard for image management.
 
 ## Getting Started
 
@@ -18,8 +18,9 @@ This repository includes two parts for a wirelessly configurable e-ink picture f
 
 The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
 
-1. Run `cargo build --release` in the project directory.
-2. Deploy the binary at `target/release/server` to your server.
+1. Navigate to the `server/` directory.
+2. If you're cross-compiling for a different target architecture (e.g., on macOS compiling for Raspberry Pi), use [`cross`](https://github.com/cross-rs/cross) to build: `cross build --release --target armv7-unknown-linux-gnueabihf`. Otherwise run `cargo build --release`.
+3. Deploy the binary created in `target` to your server.
 
 ### Inkplate
 
@@ -44,10 +45,10 @@ The server requires a [Rust](https://www.rust-lang.org/) installation in order t
 #### Installation
 
 1. Connect the Inkplate to your computer via USB.
-2. Update `sketch.yaml` with your appropriate Inkplate `fqbn` and `port`
+2. Update `sketch.yaml` with your appropriate Inkplate `fqbn` and `port`:
 
     ```sh
-    arduino-cli board list # Identify port device is connected to
+    arduino-cli board list # Identify device's port
     ```
 
 3. Compile and upload the `inkplate/inkplate.ino` sketch to the Inkplate.
