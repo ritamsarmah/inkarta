@@ -14,6 +14,13 @@ This repository includes two parts for a wirelessly configurable e-ink picture f
 
 ## Getting Started
 
+### Server
+
+The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
+
+1. Run `cargo build --release` in the project directory.
+2. Deploy the binary at `target/release/server` to your server.
+
 ### Inkplate
 
 #### Prerequisites
@@ -24,25 +31,24 @@ This repository includes two parts for a wirelessly configurable e-ink picture f
     brew install arduino-cli
     ```
 
-2. Create `inkplate/secrets.h` with your Wi-Fi credentials:
+2. Create `inkplate/secrets.h` with your Wi-Fi credentials and server info:
 
     ```c
     const char *ssid = "YOUR_WIFI_SSID";
     const char *password = "YOUR_WIFI_PASSWORD";
+
+    const char *host = "YOUR_SERVER_IP"
+    const uint16_t port = "YOUR_SERVER_PORT";
     ```
 
 #### Installation
 
 1. Connect the Inkplate to your computer via USB.
-2. Update `sketch.yaml` with the appropriate Inkplate `fqbn` and `port`; for example, for the Soldered Inkplate10:
+2. Update `sketch.yaml` with your appropriate Inkplate `fqbn` and `port`
 
     ```sh
-    arduino-cli board search Inkplate10 # Identify fqbn for device
     arduino-cli board list # Identify port device is connected to
     ```
-
-> [!TIP]
-> You can list all supported board options using `arduino-cli board details --fqbn <FQBN>` (e.g., `UploadSpeed`, `EraseFlash`). Modify them in `sketch.yaml` if needed.
 
 3. Compile and upload the `inkplate/inkplate.ino` sketch to the Inkplate.
 
@@ -51,14 +57,7 @@ This repository includes two parts for a wirelessly configurable e-ink picture f
     ```
 
 > [!NOTE]
-> If you encounter a "Bad CPU type in executable" error on macOS with Apple Silicon, install Rosetta using `softwareupdate --install-rosetta`
-
-### Server
-
-The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
-
-1. Run `cargo build --release` in the project directory.
-2. Copy the binary at `target/release/server` to your server.
+> If you encounter a "Bad CPU type in executable" error on Apple Silicon, install Rosetta using `softwareupdate --install-rosetta`
 
 ## Reference
 

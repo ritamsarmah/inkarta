@@ -17,9 +17,6 @@ const double lowBatteryVoltage = 3.4;
 const int16_t widthPx = display.height();
 const int16_t heightPx = display.width();
 
-const char *host = "192.168.1.20";
-const uint16_t port = 5000;
-
 /* Utilities */
 
 // Initializes real-time clock using server

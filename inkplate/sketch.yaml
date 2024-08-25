@@ -3,8 +3,6 @@ default_port: /dev/cu.usbserial-2140
 
 profiles:
   default:
-    fqbn: Inkplate_Boards:esp32:Inkplate10V2
-    port: /dev/cu.usbserial-2140
     platforms:
       - platform: Inkplate_Boards:esp32 (8.1.0)
         platform_index_url: https://github.com/SolderedElectronics/Dasduino-Board-Definitions-for-Arduino-IDE/raw/master/package_Dasduino_Boards_index.json
