@@ -45,7 +45,7 @@ async fn get_image(
     State(state): State<AppState>,
 ) -> impl IntoResponse {
     match db::get_image(&state.pool, id).await {
-        Ok(image) => create_bitmap_response(image, query.width, query.height),
+        Ok(image) => create_image_response(image, query.width, query.height),
         Err(err) => not_found_error(err).into_response(),
     }
 }
@@ -80,7 +80,7 @@ async fn get_next_image(
                     error!("Failed to update random next ID: {err}");
                 }
 
-                create_bitmap_response(next_image, query.width, query.height)
+                create_image_response(next_image, query.width, query.height)
             }
             Err(err) => server_error(err).into_response(),
         }
@@ -111,7 +111,7 @@ async fn create_image(
     let mut title = None;
     let mut artist = None;
     let mut dark = false;
-    let mut bitmap: Vec<u8> = Vec::new();
+    let mut image: Vec<u8> = Vec::new();
     let mut thumbnail: Vec<u8> = Vec::new();
 
     while let Some(field) = multipart.next_field().await.unwrap() {
@@ -122,7 +122,7 @@ async fn create_image(
             "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
             "image" => {
                 let data = field.bytes().await.unwrap();
-                match process_image(&data, &mut bitmap, &mut thumbnail) {
+                match process_image(&data, &mut image, &mut thumbnail) {
                     Ok(_) => debug!("Processed uploaded image"),
                     Err(err) => error!("Failed to process image: {err}"),
                 };
@@ -133,7 +133,7 @@ async fn create_image(
 
     if let (Some(title), Some(artist)) = (title, artist) {
         let background: u8 = if dark { 0 } else { 255 };
-        match db::create_image(&state.pool, &title, &artist, background, bitmap, thumbnail).await {
+        match db::create_image(&state.pool, &title, &artist, background, image, thumbnail).await {
             Ok(_) => debug!("Created new image"),
             Err(err) => error!("Failed to create image: {err}"),
         }
@@ -167,22 +167,22 @@ async fn delete_image(
 
 fn process_image(
     data: &Bytes,
-    bmp_buffer: &mut Vec<u8>,
+    image_buffer: &mut Vec<u8>,
     thumbnail_buffer: &mut Vec<u8>,
 ) -> Result<()> {
     // Create main bitmap image
-    let mut bmp = load_from_memory(data)
+    let mut image = load_from_memory(data)
         .context("Failed to load image data")?
         .grayscale()
         .into_luma8();
 
-    dither(&mut bmp, &BiLevel);
+    dither(&mut image, &BiLevel);
 
-    let mut cursor = Cursor::new(bmp_buffer);
-    bmp.write_to(&mut cursor, ImageFormat::Bmp)?;
+    let mut cursor = Cursor::new(image_buffer);
+    image.write_to(&mut cursor, ImageFormat::Bmp)?;
 
     // Create thumbnail image
-    let thumbnail = DynamicImage::ImageLuma8(bmp).thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
+    let thumbnail = DynamicImage::ImageLuma8(image).thumbnail(THUMBNAIL_SIZE, THUMBNAIL_SIZE);
 
     let mut cursor = Cursor::new(thumbnail_buffer);
     thumbnail.write_to(&mut cursor, ImageFormat::Jpeg)?;
@@ -190,7 +190,7 @@ fn process_image(
     Ok(())
 }
 
-fn create_bitmap_response(image: Image, width: Option<u32>, height: Option<u32>) -> Response<Body> {
+fn create_image_response(image: Image, width: Option<u32>, height: Option<u32>) -> Response<Body> {
     let mut buffer = Cursor::new(Vec::new());
     let bmp = load_from_memory(&image.data).unwrap();
 
