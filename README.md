@@ -19,7 +19,7 @@ This repository contains two components for a wirelessly configurable e-ink pict
 The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
 
 1. Navigate to the `server/` directory.
-2. If you're cross-compiling for a different target architecture (e.g., on macOS compiling for Raspberry Pi), use [`cross`](https://github.com/cross-rs/cross) to build: `cross build --release --target armv7-unknown-linux-gnueabihf`. Otherwise run `cargo build --release`.
+2. If you're cross-compiling for a different target architecture, you may prefer to use [`cross`](https://github.com/cross-rs/cross). For example, for Raspberry Pi 64-bit running Debian: `cross build --release --target aarch64-unknown-linux-gnu`. Otherwise run `cargo build --release`.
 3. Deploy the binary created in `target` to your server.
 
 ### Inkplate
