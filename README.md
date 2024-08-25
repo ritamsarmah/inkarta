@@ -1,16 +1,21 @@
 # Inkarta
 
-This repository contains two components for a wirelessly configurable e-ink picture frame:
+A self-hostable, wireless e-ink picture frame system for the [Soldered Inkplate 10](https://soldered.com/product/inkplate-10-9-7-e-paper-board-copy/).
 
-1. Arduino sketch for the Inkplate ESP32-based e-paper display.
-2. Server for managing and hosting images via a web interface.
+<img width="1840" alt="Screenshot 2024-08-25 at 11 19 08 AM" src="https://github.com/user-attachments/assets/ba7ea63a-712f-4b5d-9da3-4842e45aa264">
 
 ## Features
 
-- Automatically updates the picture at midnight.
-- Enters low power mode until the next refresh or a manual refresh is triggered by pressing the wake button, extending battery life for several months.
-- Server handles image processing and storage to a SQLite database.
-- Web dashboard for image management.
+This repository contains two components:
+
+1. `inkplate` - Arduino sketch for the Soldered Inkplate, an ESP32-based e-paper display:
+    - Displays pictures hosted on server.
+    - Automatically updates the picture at midnight.
+    - Enters low power mode until the next scheduled refresh or a manual refresh (via wake button), extending battery life to several months.
+2. `server` - Server written with Axum + HTMX + Jinja:
+    - Web dashboard for uploading and managing images.
+    - Handles image processing and storage to a SQLite database.
+    - Produces single binary for easy deployment.
 
 ## Getting Started
 
@@ -19,7 +24,8 @@ This repository contains two components for a wirelessly configurable e-ink pict
 The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
 
 1. Navigate to the `server/` directory.
-2. If you're cross-compiling for a different target architecture, you may prefer to use [`cross`](https://github.com/cross-rs/cross). For example, for Raspberry Pi 64-bit running Debian: `cross build --release --target aarch64-unknown-linux-gnu`. Otherwise run `cargo build --release`.
+2. If you're cross-compiling for a different target architecture, you may prefer to use [`cross`](https://github.com/cross-rs/cross). Otherwise run `cargo build --release`.
+   - e.g., Raspberry Pi OS (64-bit): `cross build --release --target aarch64-unknown-linux-gnu`. 
 3. Deploy the binary created in `target` to your server.
 
 ### Inkplate
