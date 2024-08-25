@@ -24,29 +24,7 @@ This repository includes two parts for a wirelessly configurable e-ink picture f
     brew install arduino-cli
     ```
 
-2. Update your `arduino-cli.yaml` to include the Inkplate board definitions:
-
-    ```yaml
-    board_manager:
-      additional_urls:
-        - https://github.com/SolderedElectronics/Dasduino-Board-Definitions-for-Arduino-IDE/raw/master/package_Dasduino_Boards_index.json
-    ```
-
-3. Install the Inkplate board definition:
-
-    ```sh
-    arduino-cli core update-index
-    arduino-cli core search inkplate # Check that Inkplate definition is available
-    arduino-cli core install Inkplate_Boards:esp32
-    ```
-
-4. Install the Inkplate Arduino library:
-
-    ```sh
-    arduino-cli lib install InkplateLibrary
-    ```
-
-5. Create `inkplate/secrets.h` with your Wi-Fi credentials:
+2. Create `inkplate/secrets.h` with your Wi-Fi credentials:
 
     ```c
     const char *ssid = "YOUR_WIFI_SSID";
@@ -56,27 +34,24 @@ This repository includes two parts for a wirelessly configurable e-ink picture f
 #### Installation
 
 1. Connect the Inkplate to your computer via USB.
-2. Attach via appropriate Inkplate FQBN and port; for example, for the Soldered Inkplate10:
+2. Update `sketch.yaml` with the appropriate Inkplate `fqbn` and `port`; for example, for the Soldered Inkplate10:
 
     ```sh
-    arduino-cli board search Inkplate10 # Identify FQBN for device
+    arduino-cli board search Inkplate10 # Identify fqbn for device
     arduino-cli board list # Identify port device is connected to
-    arduino-cli board attach --fqbn Inkplate_Boards:esp32:Inkplate10V2 --port /dev/cu.usbserial-2140 inkplate
-    ```
-
-3. Compile and upload the `inkplate/inkplate.ino` sketch to the Inkplate. The following commands also set the correct upload speed before uploading the sketch:
-
-    ```sh
-    # Option 1: Compile and upload separately
-    arduino-cli compile --verbose --fqbn Inkplate_Boards:esp32:Inkplate10V2 inkplate
-    arduino-cli upload --fqbn Inkplate_Boards:esp32:Inkplate10V2:UploadSpeed=115200 --port /dev/cu.usbserial-2140 inkplate
-
-    # Option 2: Compile and upload together
-    arduino-cli compile --verbose --verify --fqbn Inkplate_Boards:esp32:Inkplate10V2:UploadSpeed=115200 --port /dev/cu.usbserial-2140 --upload inkplate
     ```
 
 > [!TIP]
-> You can list all supported board options using `arduino-cli board details --fqbn Inkplate_Boards:esp32:Inkplate10V2` (e.g., `UploadSpeed`, `EraseFlash`)
+> You can list all supported board options using `arduino-cli board details --fqbn <FQBN>` (e.g., `UploadSpeed`, `EraseFlash`). Modify them in `sketch.yaml` if needed.
+
+3. Compile and upload the `inkplate/inkplate.ino` sketch to the Inkplate.
+
+    ```sh
+    arduino-cli compile --verbose --upload --profile default
+    ```
+
+> [!NOTE]
+> If you encounter a "Bad CPU type in executable" error on macOS with Apple Silicon, install Rosetta using `softwareupdate --install-rosetta`
 
 ### Server
 
