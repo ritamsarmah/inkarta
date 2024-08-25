@@ -3,7 +3,10 @@ use std::{path::Path, sync::Arc};
 use anyhow::Result;
 use axum::{extract::DefaultBodyLimit, Router};
 use server::{db, routes, state::AppState};
-use sqlx::{sqlite::SqliteConnectOptions, ConnectOptions, SqlitePool};
+use sqlx::{
+    sqlite::{SqliteConnectOptions, SqliteJournalMode},
+    ConnectOptions, SqlitePool,
+};
 use tokio::net::TcpListener;
 use tracing::debug;
 
@@ -41,6 +44,7 @@ async fn create_database_pool() -> Result<sqlx::Pool<sqlx::Sqlite>> {
     let options = SqliteConnectOptions::new()
         .filename(DATABASE_URL)
         .create_if_missing(true)
+        .journal_mode(SqliteJournalMode::Wal)
         .disable_statement_logging();
     let pool = SqlitePool::connect_with(options).await?;
 
