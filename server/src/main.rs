@@ -1,4 +1,4 @@
-use std::{path::Path, sync::Arc};
+use std::sync::Arc;
 
 use anyhow::Result;
 use axum::{extract::DefaultBodyLimit, Router};
@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
         .init();
 
     let state = AppState {
-        templates: Arc::new(create_template_env()),
+        templates: Arc::new(create_template_env()?),
         pool: create_database_pool().await?,
     };
 
@@ -53,12 +53,29 @@ async fn create_database_pool() -> Result<sqlx::Pool<sqlx::Sqlite>> {
     Ok(pool)
 }
 
-fn create_template_env() -> minijinja::Environment<'static> {
+fn create_template_env() -> Result<minijinja::Environment<'static>> {
     let mut env = minijinja::Environment::new();
-    let path = Path::new(env!("CARGO_MANIFEST_DIR")).join("templates");
-    env.set_loader(minijinja::path_loader(path));
 
-    env
+    // Embed templates directly in binary
+    env.add_template("404.jinja", include_str!("templates/404.jinja"))?;
+    env.add_template("base.jinja", include_str!("templates/base.jinja"))?;
+    env.add_template("index.jinja", include_str!("templates/index.jinja"))?;
+    env.add_template("modal.jinja", include_str!("templates/modal.jinja"))?;
+
+    env.add_template(
+        "partials/upload.jinja",
+        include_str!("templates/partials/upload.jinja"),
+    )?;
+    env.add_template(
+        "partials/device.jinja",
+        include_str!("templates/partials/device.jinja"),
+    )?;
+    env.add_template(
+        "partials/image.jinja",
+        include_str!("templates/partials/image.jinja"),
+    )?;
+
+    Ok(env)
 }
 
 // fn create_template_reloader() -> AutoReloader {
