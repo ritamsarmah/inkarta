@@ -67,6 +67,9 @@ void setup() {
     display.setTextSize(2);
     display.setTextColor(BLACK);
 
+    // Reset real-time clock
+    // display.rtcReset();
+
     // Clear alarm flag from any previous alarm
     display.rtcClearAlarmFlag();
 
