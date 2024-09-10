@@ -13,10 +13,6 @@ Inkplate display(INKPLATE_3BIT);
 // 3.7V/4.2V battery
 const double lowBatteryVoltage = 3.4;
 
-// NOTE: width and height are switched due to portrait rotation
-const int16_t widthPx = display.height();
-const int16_t heightPx = display.width();
-
 /* Utilities */
 
 // Initializes real-time clock using server
@@ -24,37 +20,46 @@ bool setRtc() {
     if (display.rtcIsSet()) return true;
 
     char url[256];
-    sprintf(url, "http://%s:%d/device/rtc", host, port);
+    snprintf(url, sizeof(url), "http://%s:%d/device/rtc", host, port);
 
+    bool success = false;
     HTTPClient http;
     if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
-        int epoch = http.getString().toInt();
-        display.rtcSetEpoch(epoch);
-        return true;
+        uint32_t epoch = http.getString().toInt();
+        if (epoch > 0) {
+            display.rtcSetEpoch(epoch);
+            success = true;
+        }
     }
 
-    return false;
+    http.end();
+    return success;
 }
 
 // Set alarm for next display refresh using server
 bool setAlarm() {
     char url[256];
-    sprintf(url, "http://%s:%d/device/alarm", host, port);
+    snprintf(url, sizeof(url), "http://%s:%d/device/alarm", host, port);
 
+    bool success = false;
     HTTPClient http;
     if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
-        int epoch = http.getString().toInt();
-        display.rtcSetAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
-        return true;
+        uint32_t epoch = http.getString().toInt();
+        if (epoch > 0) {
+            display.rtcSetAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
+            success = true;
+        }
     }
 
-    return false;
+    http.end();
+    return success;
 }
 
 // Print error message and sleep display
 void displayError(const char *message) {
     display.println(message);
     display.display();
+    display.disconnect();
     esp_deep_sleep_start();
 }
 
@@ -94,8 +99,8 @@ void setup() {
 
     // Download and draw artwork
     char url[256];
-    sprintf(url, "http://%s:%d/image/next?width=%d&height=%d", host, port,
-            widthPx, heightPx);
+    snprintf(url, sizeof(url), "http://%s:%d/image/next?width=%d&height=%d",
+             host, port, display.width(), display.height());
     if (!display.drawImage(url, display.PNG, 0, 0, false, false)) {
         displayError("Error downloading artwork");
         return;
@@ -113,10 +118,12 @@ void setup() {
     // Disconnect Wi-Fi
     display.disconnect();
 
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW); // Enable wake via wake button
-    esp_sleep_enable_ext1_wakeup(
-        int64_t(1) << GPIO_NUM_39,
-        ESP_EXT1_WAKEUP_ALL_LOW); // Enable wake via RTC interrupt alarm
+    // Enable wake via wake button
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW);
+
+    // Enable wake via RTC interrupt alarm
+    esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39,
+                                 ESP_EXT1_WAKEUP_ALL_LOW);
     esp_deep_sleep_start();
 }
 
