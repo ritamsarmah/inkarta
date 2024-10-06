@@ -10,24 +10,21 @@ Inkplate display(INKPLATE_3BIT);
 
 /* Globals */
 
-// 3.7V/4.2V battery
-const double lowBatteryVoltage = 3.4;
+constexpr double lowBatteryVoltage = 3.4; // For 3.7V/4.2V battery
+char url[128];                            // URL Buffer
 
 /* Utilities */
 
-// Initializes real-time clock using server
-bool setRtc() {
-    if (display.rtcIsSet()) return true;
+// Fetch epoch value from server for specified endpoint
+bool fetchEpoch(const char *endpoint, void (*set)(uint32_t)) {
+    snprintf(url, sizeof(url), "http://%s:%d/device/%s", host, port, endpoint);
 
-    char url[256];
-    snprintf(url, sizeof(url), "http://%s:%d/device/rtc", host, port);
-
-    bool success = false;
     HTTPClient http;
+    bool success = false;
     if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
         uint32_t epoch = http.getString().toInt();
         if (epoch > 0) {
-            display.rtcSetEpoch(epoch);
+            set(epoch);
             success = true;
         }
     }
@@ -36,23 +33,17 @@ bool setRtc() {
     return success;
 }
 
+// Initializes real-time clock using server
+bool setRtc() {
+    return fetchEpoch("rtc",
+                      [](uint32_t epoch) { display.rtcSetEpoch(epoch); });
+}
+
 // Set alarm for next display refresh using server
 bool setAlarm() {
-    char url[256];
-    snprintf(url, sizeof(url), "http://%s:%d/device/alarm", host, port);
-
-    bool success = false;
-    HTTPClient http;
-    if (http.begin(url) && http.GET() == HTTP_CODE_OK) {
-        uint32_t epoch = http.getString().toInt();
-        if (epoch > 0) {
-            display.rtcSetAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
-            success = true;
-        }
-    }
-
-    http.end();
-    return success;
+    return fetchEpoch("alarm", [](uint32_t epoch) {
+        display.rtcSetAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
+    });
 }
 
 // Print error message and sleep display
@@ -92,13 +83,12 @@ void setup() {
     }
 
     // Set real-time clock if needed
-    if (!setRtc()) {
+    if (!display.rtcIsSet() && !setRtc()) {
         displayError("Failed to set real time clock");
         return;
     }
 
     // Download and draw artwork
-    char url[256];
     snprintf(url, sizeof(url), "http://%s:%d/image/next?width=%d&height=%d",
              host, port, display.width(), display.height());
     if (!display.drawImage(url, display.PNG, 0, 0, false, false)) {
@@ -118,15 +108,18 @@ void setup() {
     // Disconnect Wi-Fi
     display.disconnect();
 
-    // Enable wake via wake button
+    // Explicitly urn off power supply for SD card (even though it's not used)
+    display.sdCardSleep();
+
+    // FIXME: Enable wake via wake button
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW);
 
     // Enable wake via RTC interrupt alarm
     esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39,
                                  ESP_EXT1_WAKEUP_ALL_LOW);
+
+    // Enter ESP32 low power mode
     esp_deep_sleep_start();
 }
 
-void loop() {
-    // Never here, since deep sleep restarts board every time
-}
+void loop() { /* Never here, since deep sleep restarts board every time */ }
