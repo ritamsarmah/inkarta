@@ -82,8 +82,8 @@ void setup() {
         return;
     }
 
-    // Set real-time clock if needed
-    if (!display.rtcIsSet() && !setRtc()) {
+    // Set real-time clock
+    if (!setRtc()) {
         displayError("Failed to set real time clock");
         return;
     }
@@ -108,10 +108,7 @@ void setup() {
     // Disconnect Wi-Fi
     display.disconnect();
 
-    // Explicitly urn off power supply for SD card (even though it's not used)
-    display.sdCardSleep();
-
-    // FIXME: Enable wake via wake button
+    // Enable wake via wake button
     esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW);
 
     // Enable wake via RTC interrupt alarm
