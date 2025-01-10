@@ -82,8 +82,8 @@ void setup() {
         return;
     }
 
-    // Set real-time clock
-    if (!setRtc()) {
+    // Set real-time clock if needed
+    if (!display.rtcIsSet() && !setRtc()) {
         displayError("Failed to set real time clock");
         return;
     }
