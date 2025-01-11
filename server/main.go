@@ -323,16 +323,15 @@ func deleteImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func setNextImage(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := parseId(r)
 	if err != nil {
-		slog.Error("Failed to parse image id", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	next = id
 
-	slog.Info("Selected next image", "id", id)
+	slog.Info("Set next image", "id", id)
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }
@@ -422,7 +421,7 @@ func resizeImage(result database.Image, newWidth int, newHeight int) *bytes.Buff
 func parseId(r *http.Request) (int64, error) {
 	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
-		slog.Error("Failed to parse image id", "error", err)
+		slog.Error("Failed to parse image ID from request", "error", err)
 		return 0, err
 	}
 
