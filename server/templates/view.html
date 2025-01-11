@@ -6,8 +6,19 @@
                     me().on("click", ev => me("dialog").remove());
                 </script>
             </button>
-            <strong>{{.Title}}</strong>
+            <strong>{{.Image.Title}}</strong>
         </header>
-        <button hx-delete="/image/{{.ID}}">Delete</button>
+        <p>meow</p>
+        <footer>
+            <!-- prettier-ignore -->
+            {{if eq .Next .Image.ID}}
+            <button class="outline" disabled>Selected</button>
+            {{else}}
+            <button hx-put="/image/next/{{.Image.ID}}">Select</button>
+            {{end}}
+            <button class="secondary" hx-delete="/image/{{.Image.ID}}">
+                Delete
+            </button>
+        </footer>
     </article>
 </dialog>

@@ -50,12 +50,16 @@
             </style>
             <h1>Gallery</h1>
             <button hx-get="/x/upload" hx-target="body" hx-swap="beforeend">
-                Upload Image
+                Upload
             </button>
         </header>
         <main>
+            <article>
+                <p><strong>Current Image:</strong> {{.Current}}</p>
+                <p><strong>Next Image:</strong> {{.Next}}</p>
+            </article>
             <ul>
-                {{range .}}
+                {{range .Images}}
                 <li>
                     <a
                         href=""

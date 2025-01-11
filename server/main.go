@@ -36,6 +36,8 @@ var ddl string
 var db *sql.DB
 var queries *database.Queries
 
+var current, next int64
+
 func main() {
 	if err := initDatabase(); err != nil {
 		log.Fatal("Failed to initialize database:", err)
@@ -50,9 +52,10 @@ func main() {
 	http.HandleFunc("GET /device/alarm", alarm)
 
 	http.HandleFunc("GET /image/{id}", getImage)
+	http.HandleFunc("GET /image/next", getNextImage)
 	http.HandleFunc("POST /image", createImage)
 	http.HandleFunc("DELETE /image/{id}", deleteImage)
-	// http.HandleFunc("PUT /image/next/{id}", putNextImage)
+	http.HandleFunc("PUT /image/next/{id}", setNextImage)
 
 	slog.Info("Starting Inkarta server...")
 	log.Fatal(http.ListenAndServe(":5000", nil))
@@ -99,14 +102,33 @@ func homePage(w http.ResponseWriter, _ *http.Request) {
 		return
 	}
 
+	currentTitle := "None"
+	if current != 0 {
+		if result, err := queries.GetImage(ctx, current); err == nil {
+			currentTitle = result.Title
+		}
+	}
+
+	nextTitle := "None"
+	if next != 0 {
+		if result, err := queries.GetImage(ctx, next); err == nil {
+			nextTitle = result.Title
+		}
+	}
+
+	data := map[string]any{
+		"Current": currentTitle,
+		"Next":    nextTitle,
+		"Images":  images,
+	}
+
 	tmpl := template.Must(template.ParseFiles("templates/index.html"))
-	tmpl.Execute(w, images)
+	tmpl.Execute(w, data)
 }
 
 func viewPartial(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := parseId(r)
 	if err != nil {
-		slog.Error("Failed to parse image id", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -114,13 +136,18 @@ func viewPartial(w http.ResponseWriter, r *http.Request) {
 	ctx := context.Background()
 	image, err := queries.GetImage(ctx, id)
 	if err != nil {
-		slog.Error("Failed to retrieve image from database", "error", err)
+		slog.Error("Failed to fetch image", "error", err)
 		http.NotFound(w, r)
 		return
 	}
 
+	data := map[string]any{
+		"Next":  next,
+		"Image": image,
+	}
+
 	tmpl := template.Must(template.ParseFiles("templates/view.html"))
-	tmpl.Execute(w, image)
+	tmpl.Execute(w, data)
 }
 
 func uploadPartial(w http.ResponseWriter, _ *http.Request) {
@@ -149,16 +176,56 @@ func alarm(w http.ResponseWriter, _ *http.Request) {
 
 /* Image */
 
+// Send image data for specific ID.
 func getImage(w http.ResponseWriter, r *http.Request) {
-	// TODO: Retrieve image based on path
-	ctx := context.Background()
-	result, err := queries.GetRandomImage(ctx)
+	id, err := parseId(r)
 	if err != nil {
-		slog.Error("Failed to fetch image from database", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+	result, err := queries.GetImage(ctx, id)
+	if err != nil {
+		slog.Error("Failed to fetch image", "id", id, "error", err)
+		http.NotFound(w, r)
+		return
+	}
+
+	sendImage(w, r, &result)
+}
+
+// Send image data for next image.
+func getNextImage(w http.ResponseWriter, r *http.Request) {
+	ctx := context.Background()
+
+	var result database.Image
+	var err error
+
+	if next == 0 {
+		// Select a random image, since no next ID set
+		result, err = queries.GetRandomImage(ctx)
+	} else {
+		// Select image based on next ID
+		result, err = queries.GetImage(ctx, next)
+	}
+
+	if err != nil {
+		slog.Error("Failed to fetch next image", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	// Update current and next states
+	current = result.ID
+	if result, err := queries.GetRandomImage(ctx); err == nil {
+		next = result.ID
+	}
+
+	sendImage(w, r, &result)
+}
+
+func sendImage(w http.ResponseWriter, r *http.Request, result *database.Image) {
 	// Parse optional resizing parameters
 	widthValue := r.FormValue("width")
 	newWidth, _ := strconv.Atoi(widthValue)
@@ -167,7 +234,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	newHeight, _ := strconv.Atoi(heightValue)
 
 	// Resize image if needed
-	buffer := resizeImage(result, newWidth, newHeight)
+	buffer := resizeImage(*result, newWidth, newHeight)
 	data := buffer.Bytes()
 
 	// Return image response
@@ -224,9 +291,8 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 }
 
 func deleteImage(w http.ResponseWriter, r *http.Request) {
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	id, err := parseId(r)
 	if err != nil {
-		slog.Error("Failed to parse image id", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -239,7 +305,34 @@ func deleteImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Clear state if identifiers match the deleted image
+
+	if current == id {
+		slog.Info("Reset current image")
+		current = 0
+	}
+
+	if next == id {
+		slog.Info("Reset next image")
+		next = 0
+	}
+
 	slog.Info("Deleted image", "id", id)
+	w.Header().Set("HX-Refresh", "true")
+	w.WriteHeader(http.StatusOK)
+}
+
+func setNextImage(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		slog.Error("Failed to parse image id", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	next = id
+
+	slog.Info("Selected next image", "id", id)
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }
@@ -322,4 +415,16 @@ func resizeImage(result database.Image, newWidth int, newHeight int) *bytes.Buff
 	}
 
 	return &buffer
+}
+
+/* Utilities */
+
+func parseId(r *http.Request) (int64, error) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		slog.Error("Failed to parse image id", "error", err)
+		return 0, err
+	}
+
+	return id, nil
 }
