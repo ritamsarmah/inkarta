@@ -6,9 +6,10 @@
                     me().on("click", ev => me("dialog").remove());
                 </script>
             </button>
-            <strong>{{.Image.Title}}</strong>
+            <h3>{{.Image.Title}}</h3>
+            <p>{{.Image.Artist}}</p>
         </header>
-        <p>meow</p>
+        <img src="/image/{{.Image.ID}}" />
         <footer>
             <!-- prettier-ignore -->
             {{if eq .Next .Image.ID}}
