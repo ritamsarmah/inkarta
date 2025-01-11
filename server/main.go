@@ -272,6 +272,8 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 	bitmap, err := processImage(file)
 	if err != nil {
 		slog.Error("Failed to process image into bitmap", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	// Store image into database
