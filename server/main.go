@@ -29,7 +29,7 @@ import (
 	"golang.org/x/image/draw"
 )
 
-const dsnURI = "file:inkarta.db?cache=shared&mode=rwc&journal_mode=WAL"
+const dsnURI = "file:inkarta.db"
 
 //go:embed schema.sql
 var ddl string
