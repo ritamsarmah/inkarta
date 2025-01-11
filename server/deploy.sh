@@ -32,7 +32,7 @@ ssh "$host" "sudo systemctl stop inkarta"
 
 # Copy binary and HTML templates
 scp "$output_dir/$target_name" "$host:$dest"
-scp -r templates/ "$host:$dest/templates"
+scp -r templates/ "$host:$dest"
 
 # Restart the server
 ssh "$host" "sudo systemctl start inkarta"
