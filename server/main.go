@@ -5,11 +5,11 @@ import (
 	"context"
 	"fmt"
 	"html/template"
-	"log"
 	"log/slog"
 	"math"
 	"mime/multipart"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -40,7 +40,8 @@ var current, next int64
 
 func main() {
 	if err := initDatabase(); err != nil {
-		log.Fatal("Failed to initialize database:", err)
+		slog.Error("Failed to initialize database", "error", err)
+		os.Exit(1)
 	}
 	defer closeDatabase()
 
@@ -58,7 +59,11 @@ func main() {
 	http.HandleFunc("PUT /image/next/{id}", setNextImage)
 
 	slog.Info("Starting Inkarta server...")
-	log.Fatal(http.ListenAndServe(":5000", nil))
+
+	if err := http.ListenAndServe(":5000", nil); err != nil {
+		slog.Error("Failed to start server", "error", err)
+		os.Exit(1)
+	}
 }
 
 /* Database */
