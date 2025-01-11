@@ -1,0 +1,43 @@
+<dialog open>
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev">
+                <script>
+                    me().on("click", ev => me("dialog").remove());
+                </script>
+            </button>
+            <strong>Upload Image</strong>
+        </header>
+
+        <form
+            hx-post="/image"
+            enctype="multipart/form-data"
+            hx-indicator=".htmx-upload"
+        >
+            <label>
+                Image
+                <input type="file" name="image" accept="image/*" required />
+            </label>
+
+            <label>
+                Title
+                <input type="text" name="title" required />
+            </label>
+
+            <label>
+                Artist
+                <input type="text" name="artist" />
+            </label>
+
+            <label>
+                <input type="checkbox" value="on" name="dark" />
+                Use dark background
+            </label>
+
+            <br />
+
+            <!-- TODO: Disable all fields and show aria-busy -->
+            <button class="htmx-upload" type="submit">Upload</button>
+        </form>
+    </article>
+</dialog>

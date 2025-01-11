@@ -10,13 +10,12 @@ order by random() limit 1;
 select id, title, artist from images
 order by artist;
 
--- name: CreateImage :one
+-- name: CreateImage :exec
 insert into images (
-    title, artist, background, data, thumbnail
+    title, artist, background, data
 ) values (
-    ?, ?, ?, ?, ?
-)
-returning *;
+    ?, ?, ?, ?
+);
 
 -- name: DeleteImage :exec
 delete from images

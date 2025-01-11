@@ -7,44 +7,31 @@ package database
 
 import (
 	"context"
-	"database/sql"
 )
 
-const createImage = `-- name: CreateImage :one
+const createImage = `-- name: CreateImage :exec
 insert into images (
-    title, artist, background, data, thumbnail
+    title, artist, background, data
 ) values (
-    ?, ?, ?, ?, ?
+    ?, ?, ?, ?
 )
-returning id, title, artist, background, data, thumbnail
 `
 
 type CreateImageParams struct {
 	Title      string
-	Artist     sql.NullString
+	Artist     string
 	Background int64
 	Data       []byte
-	Thumbnail  []byte
 }
 
-func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) (Image, error) {
-	row := q.db.QueryRowContext(ctx, createImage,
+func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) error {
+	_, err := q.db.ExecContext(ctx, createImage,
 		arg.Title,
 		arg.Artist,
 		arg.Background,
 		arg.Data,
-		arg.Thumbnail,
 	)
-	var i Image
-	err := row.Scan(
-		&i.ID,
-		&i.Title,
-		&i.Artist,
-		&i.Background,
-		&i.Data,
-		&i.Thumbnail,
-	)
-	return i, err
+	return err
 }
 
 const deleteImage = `-- name: DeleteImage :exec
@@ -58,7 +45,7 @@ func (q *Queries) DeleteImage(ctx context.Context, id int64) error {
 }
 
 const getImage = `-- name: GetImage :one
-select id, title, artist, background, data, thumbnail from images
+select id, title, artist, background, data from images
 where id = ? limit 1
 `
 
@@ -71,13 +58,12 @@ func (q *Queries) GetImage(ctx context.Context, id int64) (Image, error) {
 		&i.Artist,
 		&i.Background,
 		&i.Data,
-		&i.Thumbnail,
 	)
 	return i, err
 }
 
 const getRandomImage = `-- name: GetRandomImage :one
-select id, title, artist, background, data, thumbnail from images
+select id, title, artist, background, data from images
 order by random() limit 1
 `
 
@@ -90,7 +76,6 @@ func (q *Queries) GetRandomImage(ctx context.Context) (Image, error) {
 		&i.Artist,
 		&i.Background,
 		&i.Data,
-		&i.Thumbnail,
 	)
 	return i, err
 }
@@ -103,7 +88,7 @@ order by artist
 type ListImagesRow struct {
 	ID     int64
 	Title  string
-	Artist sql.NullString
+	Artist string
 }
 
 func (q *Queries) ListImages(ctx context.Context) ([]ListImagesRow, error) {

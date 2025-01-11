@@ -1,8 +1,7 @@
 create table if not exists images (
     id integer primary key,
     title text not null,
-    artist text,
+    artist text not null,
     background integer not null,
-    data blob not null,
-    thumbnail blob not null
+    data blob not null
 );

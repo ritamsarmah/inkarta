@@ -1,8 +1,43 @@
-{{define "content"}}
-<header>
-    <h1>Gallery</h1>
-</header>
-<main>
-    <p>Hello!</p>
-</main>
-{{end}}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="color-scheme" content="light dark" />
+        <title>Gallery | Inkarta</title>
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
+        />
+        <script src="https://unpkg.com/htmx.org@2.0.4"></script>
+        <script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
+        <script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js"></script>
+    </head>
+    <body>
+        <main class="container">
+            <h1>Gallery</h1>
+            <button hx-get="/x/upload" hx-target="body" hx-swap="beforeend">
+                Upload Image
+            </button>
+            <ul>
+                {{range .}}
+                <li>
+                    <a
+                        href=""
+                        hx-get="/x/view/{{.ID}}"
+                        hx-target="body"
+                        hx-swap="beforeend"
+                    >
+                        <!-- prettier-ignore -->
+                        {{if .Artist}}
+                            {{.Title}} - {{.Artist}}
+                        {{else}}
+                            {{.Title}}
+                        {{end}}
+                    </a>
+                </li>
+                {{end}}
+            </ul>
+        </main>
+    </body>
+</html>

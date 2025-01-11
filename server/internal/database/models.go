@@ -4,15 +4,10 @@
 
 package database
 
-import (
-	"database/sql"
-)
-
 type Image struct {
 	ID         int64
 	Title      string
-	Artist     sql.NullString
+	Artist     string
 	Background int64
 	Data       []byte
-	Thumbnail  []byte
 }

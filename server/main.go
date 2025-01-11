@@ -1,18 +1,27 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
-	_ "embed"
 	"fmt"
 	"html/template"
 	"inkarta/internal/database"
 	"log"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"strconv"
 	"time"
 
+	"golang.org/x/image/bmp"
+	"golang.org/x/image/draw"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+
+	_ "embed"
 	_ "modernc.org/sqlite"
 )
 
@@ -25,21 +34,20 @@ var queries *database.Queries
 
 func main() {
 	if err := initDatabase(); err != nil {
-		log.Fatal("Failed to initialize database with error:", err)
+		log.Fatal("Failed to initialize database:", err)
 	}
 	defer closeDatabase()
 
 	http.HandleFunc("GET /", homePage)
-	http.HandleFunc("GET /upload", uploadPage)
-	http.HandleFunc("GET /view/{id}", viewPage)
+	http.HandleFunc("GET /x/view/{id}", viewPartial)
+	http.HandleFunc("GET /x/upload", uploadPartial)
 
 	http.HandleFunc("GET /device/rtc", rtc)
 	http.HandleFunc("GET /device/alarm", alarm)
 
-	// http.HandleFunc("POST /image", createImage)
 	// http.HandleFunc("GET /image/{id}", getImage)
+	http.HandleFunc("POST /image", createImage)
 	// http.HandleFunc("DELETE /image/{id}", deleteImage)
-	// http.HandleFunc("GET /image/next", getNextImage)
 	// http.HandleFunc("PUT /image/next/{id}", putNextImage)
 
 	slog.Info("Starting Inkarta server...")
@@ -49,7 +57,6 @@ func main() {
 /* Database */
 
 func initDatabase() error {
-	ctx := context.Background()
 	var err error
 
 	slog.Info("Initializing database...")
@@ -60,12 +67,12 @@ func initDatabase() error {
 		return err
 	}
 
-	// Create tables
+	// Create table
+	ctx := context.Background()
 	if _, err = db.ExecContext(ctx, ddl); err != nil {
 		return err
 	}
 
-	// Initialize database queries
 	queries = database.New(db)
 
 	return err
@@ -77,40 +84,49 @@ func closeDatabase() {
 	}
 }
 
-/* Pages */
+/* UI */
 
 func homePage(w http.ResponseWriter, _ *http.Request) {
 	ctx := context.Background()
-
 	images, err := queries.ListImages(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch list of images", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
-	tmpl := template.Must(template.ParseFiles("templates/base.html", "templates/index.html"))
+	tmpl := template.Must(template.ParseFiles("templates/index.html"))
 	tmpl.Execute(w, images)
 }
 
-func uploadPage(w http.ResponseWriter, _ *http.Request) {
-	tmpl := template.Must(template.ParseFiles("templates/base.html", "templates/upload.html"))
-	tmpl.Execute(w, nil)
-}
-
-func viewPage(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
-
-	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+func viewPartial(w http.ResponseWriter, r *http.Request) {
+	idValue := r.PathValue("id")
+	id, err := strconv.ParseInt(idValue, 10, 64)
 	if err != nil {
-		// TODO: Handle by routing to not found page
+		slog.Error("Failed to parse image id", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
+	ctx := context.Background()
 	image, err := queries.GetImage(ctx, id)
 	if err != nil {
-		// TODO: Handle by routing to not found page
+		slog.Error("Failed to retrieve image from database", "error", err)
+		http.NotFound(w, r)
+		return
 	}
 
-	tmpl := template.Must(template.ParseFiles("templates/base.html", "templates/upload.html"))
-	tmpl.Execute(w, image)
+	data := map[string]any{
+		"Image": image,
+	}
+
+	tmpl := template.Must(template.ParseFiles("templates/view.html"))
+	tmpl.Execute(w, data)
+}
+
+func uploadPartial(w http.ResponseWriter, _ *http.Request) {
+	tmpl := template.Must(template.ParseFiles("templates/upload.html"))
+	tmpl.Execute(w, nil)
 }
 
 /* Device */
@@ -134,6 +150,107 @@ func alarm(w http.ResponseWriter, _ *http.Request) {
 
 /* Image */
 
-// func getImage(w http.ResponseWriter, _ *http.Request) {
-// 	db.
-// }
+func getImage(w http.ResponseWriter, r *http.Request) {
+	// // Parse optional parameters for image size
+
+	// var width, height *int
+
+	// if widthValue := r.Form.Get("width"); widthValue != "" {
+	// 	if intValue, err := strconv.Atoi(widthValue); err == nil {
+	// 		width = &intValue
+	// 	}
+	// }
+
+	// if heightValue := r.Form.Get("height"); heightValue != "" {
+	// 	if intValue, err := strconv.Atoi(heightValue); err == nil {
+	// 		height = &intValue
+	// 	}
+	// }
+
+	ctx := context.Background()
+	image, err := queries.GetRandomImage(ctx)
+	if err != nil {
+		slog.Error("Failed to get image from database", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "image/bmp")
+	w.Header().Set("Content-Length", strconv.Itoa(len(image.Data)))
+
+	if _, err := w.Write(image.Data); err != nil {
+		slog.Error("Failed to send image", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Returning image at full resolution", "title", image.Title)
+}
+
+func createImage(w http.ResponseWriter, r *http.Request) {
+	// Extract form values
+	title := r.FormValue("title")
+	artist := r.FormValue("artist")
+	dark := r.FormValue("dark") == "on"
+
+	file, _, err := r.FormFile("image")
+	defer file.Close()
+
+	if err != nil {
+		slog.Error("Failed to read uploaded image file", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	// Process image into bitmap for Inkplate
+	bitmap, err := processImage(file)
+	if err != nil {
+		slog.Error("Failed to process image into bitmap", "error", err)
+	}
+
+	// Determine background color
+	var background int64
+	if dark {
+		background = 0
+	} else {
+		background = 255
+	}
+
+	// Store image into database
+	ctx := context.Background()
+	params := database.CreateImageParams{
+		Title:      title,
+		Artist:     artist,
+		Background: background,
+		Data:       bitmap,
+	}
+
+	if err := queries.CreateImage(ctx, params); err != nil {
+		slog.Error("Failed to create image", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	slog.Info("Created new image", "title", title, "artist", artist)
+
+	w.Header().Set("HX-Refresh", "true")
+	w.WriteHeader(http.StatusOK)
+}
+
+func processImage(f multipart.File) ([]byte, error) {
+	src, _, err := image.Decode(f)
+	if err != nil {
+		return nil, err
+	}
+
+	bounds := src.Bounds()
+	dst := image.NewGray(bounds)
+	draw.FloydSteinberg.Draw(dst, bounds, src, image.Point{})
+
+	var buffer bytes.Buffer
+	if err := bmp.Encode(&buffer, dst); err != nil {
+		return nil, err
+	}
+
+	return buffer.Bytes(), nil
+}
