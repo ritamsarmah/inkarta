@@ -51,7 +51,7 @@ func main() {
 
 	http.HandleFunc("GET /image/{id}", getImage)
 	http.HandleFunc("POST /image", createImage)
-	// http.HandleFunc("DELETE /image/{id}", deleteImage)
+	http.HandleFunc("DELETE /image/{id}", deleteImage)
 	// http.HandleFunc("PUT /image/next/{id}", putNextImage)
 
 	slog.Info("Starting Inkarta server...")
@@ -104,8 +104,7 @@ func homePage(w http.ResponseWriter, _ *http.Request) {
 }
 
 func viewPartial(w http.ResponseWriter, r *http.Request) {
-	idValue := r.PathValue("id")
-	id, err := strconv.ParseInt(idValue, 10, 64)
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
 	if err != nil {
 		slog.Error("Failed to parse image id", "error", err)
 		w.WriteHeader(http.StatusBadRequest)
@@ -223,6 +222,29 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }
+
+func deleteImage(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
+	if err != nil {
+		slog.Error("Failed to parse image id", "error", err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	ctx := context.Background()
+	err = queries.DeleteImage(ctx, id)
+	if err != nil {
+		slog.Error("Failed to delete image", "error", err)
+		http.NotFound(w, r)
+		return
+	}
+
+	slog.Info("Deleted image", "id", id)
+	w.Header().Set("HX-Refresh", "true")
+	w.WriteHeader(http.StatusOK)
+}
+
+/* Image Processing */
 
 // Converts an image into a grayscale bitmap.
 func processImage(f multipart.File) ([]byte, error) {
