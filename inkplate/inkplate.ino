@@ -82,8 +82,8 @@ void setup() {
         return;
     }
 
-    // Set real-time clock
-    if (!setRtc()) {
+    // Set real-time clock if needed
+    if (!display.rtcIsSet() && !setRtc()) {
         displayError("Failed to set real time clock");
         return;
     }
@@ -91,7 +91,7 @@ void setup() {
     // Download and draw artwork
     snprintf(url, sizeof(url), "http://%s:%d/image/next?width=%d&height=%d",
              host, port, display.width(), display.height());
-    if (!display.drawImage(url, display.PNG, 0, 0, false, false)) {
+    if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
         displayError("Error downloading artwork");
         return;
     }
