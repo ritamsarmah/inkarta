@@ -45,8 +45,8 @@ func main() {
 	defer closeDatabase()
 
 	http.HandleFunc("GET /", homePage)
-	http.HandleFunc("GET /x/view/{id}", viewPartial)
-	http.HandleFunc("GET /x/upload", uploadPartial)
+	http.HandleFunc("GET /ui/view/{id}", viewPartial)
+	http.HandleFunc("GET /ui/upload", uploadPartial)
 
 	http.HandleFunc("GET /device/rtc", rtc)
 	http.HandleFunc("GET /device/alarm", alarm)
