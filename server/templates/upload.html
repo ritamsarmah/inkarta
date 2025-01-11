@@ -12,7 +12,7 @@
         <form
             hx-post="/image"
             enctype="multipart/form-data"
-            hx-indicator=".htmx-upload"
+            hx-on::before-request="disableForm(event.target)"
         >
             <label>
                 Image
@@ -36,8 +36,19 @@
 
             <br />
 
-            <!-- TODO: Disable all fields and show aria-busy -->
-            <button class="htmx-upload" type="submit">Upload</button>
+            <button type="submit">Upload</button>
+
+            <script>
+                function disableForm(form) {
+                    form.querySelectorAll("input, button").forEach(input => {
+                        input.disabled = true;
+                    });
+
+                    const button = form.querySelector("button");
+                    button.innerText = "Uploading...";
+                    button.setAttribute("aria-busy", "true");
+                }
+            </script>
         </form>
     </article>
 </dialog>

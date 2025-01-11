@@ -9,7 +9,11 @@
             <h3>{{.Image.Title}}</h3>
             <p>{{.Image.Artist}}</p>
         </header>
-        <img src="/image/{{.Image.ID}}" />
+        <img
+            src="/image/{{.Image.ID}}?width=800&height=600"
+            width="800"
+            height="600"
+        />
         <footer>
             <!-- prettier-ignore -->
             {{if eq .Next .Image.ID}}
