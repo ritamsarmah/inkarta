@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Configuration for cross-compiling to Raspberry Pi
 export GOOS=linux
 export GOARCH=arm
@@ -22,8 +24,15 @@ fi
 
 echo "Deploying to Raspberry Pi..."
 
-dest="pi@192.168.1.5:/home/pi/inkarta"
+host="pi@192.168.1.5"
+dest="/home/pi/inkarta"
+
+# Stop the server
+ssh "$host" "sudo systemctl stop inkarta"
 
 # Copy binary and HTML templates
-scp "$output_dir/$target_name" "$dest"
-scp -r templates/ "$dest/templates"
+scp "$output_dir/$target_name" "$host:$dest"
+scp -r templates/ "$host:$dest/templates"
+
+# Restart the server
+ssh "$host" "sudo systemctl start inkarta"
