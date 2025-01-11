@@ -2,8 +2,6 @@
 
 A self-hostable, wireless e-ink picture frame system for the [Soldered Inkplate 10](https://soldered.com/product/inkplate-10-9-7-e-paper-board-copy/).
 
-<img width="1840" alt="Screenshot 2024-08-25 at 11 19 08 AM" src="https://github.com/user-attachments/assets/ba7ea63a-712f-4b5d-9da3-4842e45aa264">
-
 ## Features
 
 This repository contains two components:
@@ -12,7 +10,7 @@ This repository contains two components:
     - Displays pictures hosted on server.
     - Automatically updates the picture at midnight.
     - Enters low power mode until the next scheduled refresh or a manual refresh (via wake button), extending battery life to several months.
-2. `server` - Server written with Axum + HTMX + Jinja:
+2. `server` - Server written with Go + HTMX:
     - Web dashboard for uploading and managing images.
     - Handles image processing and storage to a SQLite database.
     - Produces single binary for easy deployment.
@@ -21,12 +19,12 @@ This repository contains two components:
 
 ### Server
 
-The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
+The server requires a [Go](https://go.dev) installation in order to run.
 
 1. Navigate to the `server/` directory.
-2. If you're cross-compiling for a different target architecture, you may prefer to use [`cross`](https://github.com/cross-rs/cross). Otherwise run `cargo build --release`.
-   - e.g., Raspberry Pi OS (64-bit): `cross build --release --target aarch64-unknown-linux-gnu`. 
-3. Deploy the binary created in `target` to your server.
+2. Run `go run .`
+
+See `deploy.sh` for deploying the binary to a Raspberry Pi server.
 
 ### Inkplate
 
