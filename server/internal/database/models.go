@@ -5,9 +5,9 @@
 package database
 
 type Image struct {
-	ID         int64
-	Title      string
-	Artist     string
-	Background int64
-	Data       []byte
+	ID     int64
+	Title  string
+	Artist string
+	Dark   bool
+	Data   []byte
 }

@@ -5,20 +5,55 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <meta name="color-scheme" content="light dark" />
         <title>Gallery | Inkarta</title>
+
+        <!-- Pico CSS-->
         <link
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css"
         />
+
+        <!-- Google Fonts -->
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+            rel="stylesheet"
+        />
+
+        <!-- Scripts -->
         <script src="https://unpkg.com/htmx.org@2.0.4"></script>
         <script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js"></script>
         <script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js"></script>
+
+        <!-- CSS -->
+        <style>
+            :root {
+                --pico-font-family-sans-serif: "Lato", sans-serif;
+                --pico-font-size: 100%;
+            }
+        </style>
     </head>
-    <body>
-        <main class="container">
+    <body class="container">
+        <header>
+            <style>
+                me {
+                    margin-top: 2rem;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                }
+
+                /* Disable margin to center h1 with button */
+                h1 {
+                    margin: 0;
+                }
+            </style>
             <h1>Gallery</h1>
             <button hx-get="/x/upload" hx-target="body" hx-swap="beforeend">
                 Upload Image
             </button>
+        </header>
+        <main>
             <ul>
                 {{range .}}
                 <li>

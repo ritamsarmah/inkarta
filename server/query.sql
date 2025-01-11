@@ -12,7 +12,7 @@ order by artist;
 
 -- name: CreateImage :exec
 insert into images (
-    title, artist, background, data
+    title, artist, dark, data
 ) values (
     ?, ?, ?, ?
 );

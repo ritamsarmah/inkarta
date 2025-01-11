@@ -11,24 +11,24 @@ import (
 
 const createImage = `-- name: CreateImage :exec
 insert into images (
-    title, artist, background, data
+    title, artist, dark, data
 ) values (
     ?, ?, ?, ?
 )
 `
 
 type CreateImageParams struct {
-	Title      string
-	Artist     string
-	Background int64
-	Data       []byte
+	Title  string
+	Artist string
+	Dark   bool
+	Data   []byte
 }
 
 func (q *Queries) CreateImage(ctx context.Context, arg CreateImageParams) error {
 	_, err := q.db.ExecContext(ctx, createImage,
 		arg.Title,
 		arg.Artist,
-		arg.Background,
+		arg.Dark,
 		arg.Data,
 	)
 	return err
@@ -45,7 +45,7 @@ func (q *Queries) DeleteImage(ctx context.Context, id int64) error {
 }
 
 const getImage = `-- name: GetImage :one
-select id, title, artist, background, data from images
+select id, title, artist, dark, data from images
 where id = ? limit 1
 `
 
@@ -56,14 +56,14 @@ func (q *Queries) GetImage(ctx context.Context, id int64) (Image, error) {
 		&i.ID,
 		&i.Title,
 		&i.Artist,
-		&i.Background,
+		&i.Dark,
 		&i.Data,
 	)
 	return i, err
 }
 
 const getRandomImage = `-- name: GetRandomImage :one
-select id, title, artist, background, data from images
+select id, title, artist, dark, data from images
 order by random() limit 1
 `
 
@@ -74,7 +74,7 @@ func (q *Queries) GetRandomImage(ctx context.Context) (Image, error) {
 		&i.ID,
 		&i.Title,
 		&i.Artist,
-		&i.Background,
+		&i.Dark,
 		&i.Data,
 	)
 	return i, err

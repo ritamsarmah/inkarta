@@ -3,26 +3,30 @@ package main
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"fmt"
 	"html/template"
-	"inkarta/internal/database"
 	"log"
 	"log/slog"
+	"math"
 	"mime/multipart"
 	"net/http"
 	"strconv"
 	"time"
 
-	"golang.org/x/image/bmp"
-	"golang.org/x/image/draw"
+	"database/sql"
+	_ "embed"
+	"inkarta/internal/database"
+
+	_ "modernc.org/sqlite"
+
 	"image"
+	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 
-	_ "embed"
-	_ "modernc.org/sqlite"
+	"golang.org/x/image/bmp"
+	"golang.org/x/image/draw"
 )
 
 const dsnURI = "file:inkarta.db?cache=shared&mode=rwc&journal_mode=WAL"
@@ -45,7 +49,7 @@ func main() {
 	http.HandleFunc("GET /device/rtc", rtc)
 	http.HandleFunc("GET /device/alarm", alarm)
 
-	// http.HandleFunc("GET /image/{id}", getImage)
+	http.HandleFunc("GET /image/{id}", getImage)
 	http.HandleFunc("POST /image", createImage)
 	// http.HandleFunc("DELETE /image/{id}", deleteImage)
 	// http.HandleFunc("PUT /image/next/{id}", putNextImage)
@@ -116,12 +120,8 @@ func viewPartial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	data := map[string]any{
-		"Image": image,
-	}
-
 	tmpl := template.Must(template.ParseFiles("templates/view.html"))
-	tmpl.Execute(w, data)
+	tmpl.Execute(w, image)
 }
 
 func uploadPartial(w http.ResponseWriter, _ *http.Request) {
@@ -151,40 +151,35 @@ func alarm(w http.ResponseWriter, _ *http.Request) {
 /* Image */
 
 func getImage(w http.ResponseWriter, r *http.Request) {
-	// // Parse optional parameters for image size
-
-	// var width, height *int
-
-	// if widthValue := r.Form.Get("width"); widthValue != "" {
-	// 	if intValue, err := strconv.Atoi(widthValue); err == nil {
-	// 		width = &intValue
-	// 	}
-	// }
-
-	// if heightValue := r.Form.Get("height"); heightValue != "" {
-	// 	if intValue, err := strconv.Atoi(heightValue); err == nil {
-	// 		height = &intValue
-	// 	}
-	// }
-
+	// TODO: Retrieve image based on path
 	ctx := context.Background()
-	image, err := queries.GetRandomImage(ctx)
+	result, err := queries.GetRandomImage(ctx)
 	if err != nil {
-		slog.Error("Failed to get image from database", "error", err)
+		slog.Error("Failed to fetch image from database", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	w.Header().Set("Content-Type", "image/bmp")
-	w.Header().Set("Content-Length", strconv.Itoa(len(image.Data)))
+	// Parse optional resizing parameters
+	widthValue := r.FormValue("width")
+	newWidth, _ := strconv.Atoi(widthValue)
 
-	if _, err := w.Write(image.Data); err != nil {
+	heightValue := r.FormValue("height")
+	newHeight, _ := strconv.Atoi(heightValue)
+
+	// Resize image if needed
+	buffer := resizeImage(result, newWidth, newHeight)
+	data := buffer.Bytes()
+
+	// Return image response
+	w.Header().Set("Content-Type", "image/bmp")
+	w.Header().Set("Content-Length", strconv.Itoa(len(data)))
+
+	if _, err := w.Write(data); err != nil {
 		slog.Error("Failed to send image", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	slog.Info("Returning image at full resolution", "title", image.Title)
 }
 
 func createImage(w http.ResponseWriter, r *http.Request) {
@@ -208,21 +203,13 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 		slog.Error("Failed to process image into bitmap", "error", err)
 	}
 
-	// Determine background color
-	var background int64
-	if dark {
-		background = 0
-	} else {
-		background = 255
-	}
-
 	// Store image into database
 	ctx := context.Background()
 	params := database.CreateImageParams{
-		Title:      title,
-		Artist:     artist,
-		Background: background,
-		Data:       bitmap,
+		Title:  title,
+		Artist: artist,
+		Dark:   dark,
+		Data:   bitmap,
 	}
 
 	if err := queries.CreateImage(ctx, params); err != nil {
@@ -237,6 +224,7 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
+// Converts an image into a grayscale bitmap.
 func processImage(f multipart.File) ([]byte, error) {
 	src, _, err := image.Decode(f)
 	if err != nil {
@@ -253,4 +241,63 @@ func processImage(f multipart.File) ([]byte, error) {
 	}
 
 	return buffer.Bytes(), nil
+}
+
+// Resizes image to desired dimensions.
+func resizeImage(result database.Image, newWidth int, newHeight int) *bytes.Buffer {
+	reader := bytes.NewReader(result.Data)
+	src, _, _ := image.Decode(reader)
+
+	oldWidth := src.Bounds().Dx()
+	oldHeight := src.Bounds().Dy()
+
+	if newWidth == 0 {
+		newWidth = oldWidth
+	}
+
+	if newHeight == 0 {
+		newHeight = oldHeight
+	}
+
+	var buffer bytes.Buffer
+	if newWidth != oldWidth || newHeight != oldHeight {
+		slog.Info("Resizing image", "width", newWidth, "height", newHeight)
+
+		// Determine fill color
+		var fill color.Color
+		if result.Dark {
+			fill = color.Black
+		} else {
+			fill = color.White
+		}
+
+		// Create destination canvas with background fill
+		dst := image.NewGray(image.Rect(0, 0, newWidth, newHeight))
+		draw.Draw(dst, dst.Bounds(), &image.Uniform{fill}, image.Point{}, draw.Src)
+
+		// Calculate the scaling factor to maintain aspect ratio
+		scaleX := float64(newWidth) / float64(oldWidth)
+		scaleY := float64(newHeight) / float64(oldHeight)
+		scale := math.Min(scaleX, scaleY)
+
+		// Calculate scaled image dimensions
+		scaledWidth := int(float64(oldWidth) * scale)
+		scaledHeight := int(float64(oldHeight) * scale)
+
+		// Calculate offsets to center the scaled image
+		offsetX := (newWidth - scaledWidth) / 2
+		offsetY := (newHeight - scaledHeight) / 2
+
+		// Define the rectangle for the scaled image's position
+		scaledRect := image.Rect(offsetX, offsetY, offsetX+scaledWidth, offsetY+scaledHeight)
+
+		// Scale the source image into the destination
+		draw.ApproxBiLinear.Scale(dst, scaledRect, src, src.Bounds(), draw.Over, nil)
+		bmp.Encode(&buffer, dst)
+	} else {
+		slog.Info("Returning image at full resolution", "title", result.Title)
+		bmp.Encode(&buffer, src)
+	}
+
+	return &buffer
 }
