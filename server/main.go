@@ -93,8 +93,8 @@ func closeDatabase() {
 
 /* UI */
 
-func homePage(w http.ResponseWriter, _ *http.Request) {
-	ctx := context.Background()
+func homePage(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
 	images, err := queries.ListImages(ctx)
 	if err != nil {
 		slog.Error("Failed to fetch list of images", "error", err)
@@ -133,7 +133,7 @@ func viewPartial(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	image, err := queries.GetImage(ctx, id)
 	if err != nil {
 		slog.Error("Failed to fetch image", "error", err)
@@ -184,7 +184,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	result, err := queries.GetImage(ctx, id)
 	if err != nil {
 		slog.Error("Failed to fetch image", "id", id, "error", err)
@@ -197,7 +197,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 
 // Send image data for next image.
 func getNextImage(w http.ResponseWriter, r *http.Request) {
-	ctx := context.Background()
+	ctx := r.Context()
 
 	var result database.Image
 	var err error
@@ -270,7 +270,7 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Store image into database
-	ctx := context.Background()
+	ctx := r.Context()
 	params := database.CreateImageParams{
 		Title:  title,
 		Artist: artist,
@@ -297,7 +297,7 @@ func deleteImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ctx := context.Background()
+	ctx := r.Context()
 	err = queries.DeleteImage(ctx, id)
 	if err != nil {
 		slog.Error("Failed to delete image", "error", err)
