@@ -3,30 +3,29 @@ package main
 import (
 	"bytes"
 	"context"
+	_ "embed"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"math"
-	"mime/multipart"
-	"net/http"
 	"os"
 	"strconv"
 	"time"
 
-	"database/sql"
-	_ "embed"
-	"inkarta/internal/database"
+	"html/template"
+	"mime/multipart"
+	"net/http"
 
+	"database/sql"
+	"inkarta/internal/database"
 	_ "modernc.org/sqlite"
 
+	"golang.org/x/image/bmp"
+	"golang.org/x/image/draw"
 	"image"
 	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-
-	"golang.org/x/image/bmp"
-	"golang.org/x/image/draw"
 )
 
 const dsnURI = "file:inkarta.db"
