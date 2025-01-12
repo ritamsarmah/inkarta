@@ -381,7 +381,7 @@ func resizeImage(result *database.Image, newWidth int, newHeight int) *bytes.Buf
 
 	var buffer bytes.Buffer
 	if newWidth != oldWidth || newHeight != oldHeight {
-		slog.Info("Resizing image", "width", newWidth, "height", newHeight)
+		slog.Info("Returning resized image", "title", result.Title, "width", newWidth, "height", newHeight)
 
 		// Determine fill color
 		var fill color.Color
@@ -408,14 +408,12 @@ func resizeImage(result *database.Image, newWidth int, newHeight int) *bytes.Buf
 		offsetX := (newWidth - scaledWidth) / 2
 		offsetY := (newHeight - scaledHeight) / 2
 
-		// Define the rectangle for the scaled image's position
-		scaledRect := image.Rect(offsetX, offsetY, offsetX+scaledWidth, offsetY+scaledHeight)
-
 		// Scale the source image into the destination
+		scaledRect := image.Rect(offsetX, offsetY, offsetX+scaledWidth, offsetY+scaledHeight)
 		draw.ApproxBiLinear.Scale(dst, scaledRect, src, src.Bounds(), draw.Over, nil)
 		bmp.Encode(&buffer, dst)
 	} else {
-		slog.Info("Returning image at full resolution", "title", result.Title)
+		slog.Info("Returning full resolution image", "title", result.Title, "width", oldWidth, "height", oldHeight)
 		bmp.Encode(&buffer, src)
 	}
 
