@@ -238,7 +238,7 @@ func sendImage(w http.ResponseWriter, r *http.Request, result *database.Image) {
 	newHeight, _ := strconv.Atoi(heightValue)
 
 	// Resize image if needed
-	buffer := resizeImage(*result, newWidth, newHeight)
+	buffer := resizeImage(result, newWidth, newHeight)
 	data := buffer.Bytes()
 
 	// Return image response
@@ -268,7 +268,7 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process image into bitmap for Inkplate
-	bitmap, err := processImage(file)
+	bitmap, err := processImage(&file)
 	if err != nil {
 		slog.Error("Failed to process image into bitmap", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -345,8 +345,8 @@ func setNextImage(w http.ResponseWriter, r *http.Request) {
 /* Image Processing */
 
 // Converts an image into a grayscale bitmap.
-func processImage(f multipart.File) ([]byte, error) {
-	src, _, err := image.Decode(f)
+func processImage(f *multipart.File) ([]byte, error) {
+	src, _, err := image.Decode(*f)
 	if err != nil {
 		return nil, err
 	}
@@ -364,7 +364,7 @@ func processImage(f multipart.File) ([]byte, error) {
 }
 
 // Resizes image to desired dimensions.
-func resizeImage(result database.Image, newWidth int, newHeight int) *bytes.Buffer {
+func resizeImage(result *database.Image, newWidth int, newHeight int) *bytes.Buffer {
 	reader := bytes.NewReader(result.Data)
 	src, _, _ := image.Decode(reader)
 
