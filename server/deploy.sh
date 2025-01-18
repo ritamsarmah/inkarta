@@ -17,7 +17,7 @@ go build -o $output_dir/$target_name
 
 if [ $? -eq 0 ]; then
   echo "Build succeeded"
-else 
+else
   echo "Build failed"
   exit 1
 fi
@@ -30,9 +30,10 @@ dest="/home/pi/inkarta"
 # Stop the server
 ssh "$host" "sudo systemctl stop inkarta"
 
-# Copy binary and HTML templates
+# Copy files
 scp "$output_dir/$target_name" "$host:$dest"
 scp -r templates/ "$host:$dest"
+scp inkarta.service "$host:$dest"
 
 # Restart the server
 ssh "$host" "sudo systemctl start inkarta"
