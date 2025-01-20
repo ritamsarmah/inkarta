@@ -52,15 +52,15 @@ func homePage(w http.ResponseWriter, r *http.Request) {
 
 	currentTitle := "None"
 	if current != 0 {
-		if result, err := queries.GetImage(ctx, current); err == nil {
-			currentTitle = result.Title
+		if img, err := queries.GetImage(ctx, current); err == nil {
+			currentTitle = img.Title
 		}
 	}
 
 	nextTitle := "None"
 	if next != 0 {
-		if result, err := queries.GetImage(ctx, next); err == nil {
-			nextTitle = result.Title
+		if img, err := queries.GetImage(ctx, next); err == nil {
+			nextTitle = img.Title
 		}
 	}
 
@@ -133,29 +133,29 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ctx := r.Context()
-	result, err := queries.GetImage(ctx, id)
+	img, err := queries.GetImage(ctx, id)
 	if err != nil {
 		slog.Error("Failed to fetch image", "id", id, "error", err)
 		http.NotFound(w, r)
 		return
 	}
 
-	sendImage(w, r, &result)
+	sendImage(w, r, &img)
 }
 
 // Send image data for next image.
 func getNextImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var result db.Image
+	var img db.Image
 	var err error
 
 	if next == 0 {
 		// Select a random image, since no next ID set
-		result, err = queries.GetRandomImage(ctx)
+		img, err = queries.GetRandomImage(ctx)
 	} else {
 		// Select image based on next ID
-		result, err = queries.GetImage(ctx, next)
+		img, err = queries.GetImage(ctx, next)
 	}
 
 	if err != nil {
@@ -165,15 +165,15 @@ func getNextImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update current and next states
-	current = result.ID
-	if result, err := queries.GetRandomImage(ctx); err == nil {
-		next = result.ID
+	current = img.ID
+	if img, err := queries.GetRandomImage(ctx); err == nil {
+		next = img.ID
 	}
 
-	sendImage(w, r, &result)
+	sendImage(w, r, &img)
 }
 
-func sendImage(w http.ResponseWriter, r *http.Request, result *db.Image) {
+func sendImage(w http.ResponseWriter, r *http.Request, img *db.Image) {
 	// Parse optional resizing parameters
 	widthValue := r.FormValue("width")
 	newWidth, _ := strconv.Atoi(widthValue)
@@ -182,7 +182,7 @@ func sendImage(w http.ResponseWriter, r *http.Request, result *db.Image) {
 	newHeight, _ := strconv.Atoi(heightValue)
 
 	// Resize image if needed
-	buffer := image.Resize(result, newWidth, newHeight)
+	buffer := image.Resize(img, newWidth, newHeight)
 	data := buffer.Bytes()
 
 	// Return image response
