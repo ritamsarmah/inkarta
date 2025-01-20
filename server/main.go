@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log/slog"
 	"math"
-	"os"
 	"strconv"
 	"time"
 
@@ -28,6 +27,7 @@ import (
 	_ "image/png"
 )
 
+const port = 5000
 const dsnURI = "file:inkarta.db"
 
 //go:embed schema.sql
@@ -39,8 +39,7 @@ var current, next int64
 
 func main() {
 	if err := initDatabase(); err != nil {
-		slog.Error("Failed to initialize database", "error", err)
-		os.Exit(1)
+		panic(err)
 	}
 	defer closeDatabase()
 
@@ -59,9 +58,9 @@ func main() {
 
 	slog.Info("Starting Inkarta server...")
 
-	if err := http.ListenAndServe(":5000", nil); err != nil {
-		slog.Error("Failed to start server", "error", err)
-		os.Exit(1)
+	addr := fmt.Sprintf(":%d", port)
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		panic(err)
 	}
 }
 
