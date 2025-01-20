@@ -2,7 +2,7 @@
 // versions:
 //   sqlc v1.27.0
 
-package database
+package db
 
 type Image struct {
 	ID     int64

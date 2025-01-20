@@ -1,97 +1,42 @@
-package main
+package routes
 
 import (
-	"bytes"
-	"context"
 	_ "embed"
 	"fmt"
-	"log/slog"
-	"math"
-	"strconv"
-	"time"
-
 	"html/template"
-	"mime/multipart"
-	"net/http"
-
-	"database/sql"
-	"inkarta/internal/database"
-	_ "modernc.org/sqlite"
-
-	"golang.org/x/image/bmp"
-	"golang.org/x/image/draw"
-	"image"
-	"image/color"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"inkarta/internal/db"
+	"inkarta/internal/image"
+	"log/slog"
+	"net/http"
+	"strconv"
+	"time"
 )
 
-const port = 5000
-const dsnURI = "file:inkarta.db"
-
-//go:embed schema.sql
-var ddl string
-var db *sql.DB
-var queries *database.Queries
-
+var queries *db.Queries
 var current, next int64
 
-func main() {
-	if err := initDatabase(); err != nil {
-		panic(err)
-	}
-	defer closeDatabase()
+func NewRouter(q *db.Queries) http.Handler {
+	queries = q
 
-	http.HandleFunc("GET /", homePage)
-	http.HandleFunc("GET /ui/view/{id}", viewPartial)
-	http.HandleFunc("GET /ui/upload", uploadPartial)
+	mux := http.NewServeMux()
 
-	http.HandleFunc("GET /device/rtc", rtc)
-	http.HandleFunc("GET /device/alarm", alarm)
+	mux.HandleFunc("GET /", homePage)
+	mux.HandleFunc("GET /ui/view/{id}", viewPartial)
+	mux.HandleFunc("GET /ui/upload", uploadPartial)
 
-	http.HandleFunc("GET /image/{id}", getImage)
-	http.HandleFunc("GET /image/next", getNextImage)
-	http.HandleFunc("POST /image", createImage)
-	http.HandleFunc("DELETE /image/{id}", deleteImage)
-	http.HandleFunc("PUT /image/next/{id}", setNextImage)
+	mux.HandleFunc("GET /device/rtc", rtc)
+	mux.HandleFunc("GET /device/alarm", alarm)
 
-	slog.Info("Starting Inkarta server...")
+	mux.HandleFunc("GET /image/{id}", getImage)
+	mux.HandleFunc("GET /image/next", getNextImage)
+	mux.HandleFunc("POST /image", createImage)
+	mux.HandleFunc("DELETE /image/{id}", deleteImage)
+	mux.HandleFunc("PUT /image/next/{id}", setNextImage)
 
-	addr := fmt.Sprintf(":%d", port)
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		panic(err)
-	}
-}
-
-/* Database */
-
-func initDatabase() error {
-	var err error
-
-	slog.Info("Initializing database...")
-
-	// Open database
-	db, err = sql.Open("sqlite", dsnURI)
-	if err != nil {
-		return err
-	}
-
-	// Create table
-	ctx := context.Background()
-	if _, err = db.ExecContext(ctx, ddl); err != nil {
-		return err
-	}
-
-	queries = database.New(db)
-
-	return err
-}
-
-func closeDatabase() {
-	if err := db.Close(); err != nil {
-		slog.Error("Failed to close database", "error", err)
-	}
+	return mux
 }
 
 /* UI */
@@ -202,7 +147,7 @@ func getImage(w http.ResponseWriter, r *http.Request) {
 func getNextImage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	var result database.Image
+	var result db.Image
 	var err error
 
 	if next == 0 {
@@ -228,7 +173,7 @@ func getNextImage(w http.ResponseWriter, r *http.Request) {
 	sendImage(w, r, &result)
 }
 
-func sendImage(w http.ResponseWriter, r *http.Request, result *database.Image) {
+func sendImage(w http.ResponseWriter, r *http.Request, result *db.Image) {
 	// Parse optional resizing parameters
 	widthValue := r.FormValue("width")
 	newWidth, _ := strconv.Atoi(widthValue)
@@ -237,7 +182,7 @@ func sendImage(w http.ResponseWriter, r *http.Request, result *database.Image) {
 	newHeight, _ := strconv.Atoi(heightValue)
 
 	// Resize image if needed
-	buffer := resizeImage(result, newWidth, newHeight)
+	buffer := image.Resize(result, newWidth, newHeight)
 	data := buffer.Bytes()
 
 	// Return image response
@@ -267,7 +212,7 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Process image into bitmap for Inkplate
-	bitmap, err := processImage(&file)
+	bitmap, err := image.Process(&file)
 	if err != nil {
 		slog.Error("Failed to process image into bitmap", "error", err)
 		w.WriteHeader(http.StatusInternalServerError)
@@ -276,7 +221,7 @@ func createImage(w http.ResponseWriter, r *http.Request) {
 
 	// Store image into database
 	ctx := r.Context()
-	params := database.CreateImageParams{
+	params := db.CreateImageParams{
 		Title:  title,
 		Artist: artist,
 		Dark:   dark,
@@ -339,84 +284,6 @@ func setNextImage(w http.ResponseWriter, r *http.Request) {
 	slog.Info("Set next image", "id", id)
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
-}
-
-/* Image Processing */
-
-// Converts an image into a grayscale bitmap.
-func processImage(f *multipart.File) ([]byte, error) {
-	src, _, err := image.Decode(*f)
-	if err != nil {
-		return nil, err
-	}
-
-	bounds := src.Bounds()
-	dst := image.NewGray(bounds)
-	draw.FloydSteinberg.Draw(dst, bounds, src, image.Point{})
-
-	var buffer bytes.Buffer
-	if err := bmp.Encode(&buffer, dst); err != nil {
-		return nil, err
-	}
-
-	return buffer.Bytes(), nil
-}
-
-// Resizes image to desired dimensions.
-func resizeImage(result *database.Image, newWidth int, newHeight int) *bytes.Buffer {
-	reader := bytes.NewReader(result.Data)
-	src, _, _ := image.Decode(reader)
-
-	oldWidth := src.Bounds().Dx()
-	oldHeight := src.Bounds().Dy()
-
-	if newWidth == 0 {
-		newWidth = oldWidth
-	}
-
-	if newHeight == 0 {
-		newHeight = oldHeight
-	}
-
-	var buffer bytes.Buffer
-	if newWidth != oldWidth || newHeight != oldHeight {
-		slog.Info("Returning resized image", "title", result.Title, "width", newWidth, "height", newHeight)
-
-		// Determine fill color
-		var fill color.Color
-		if result.Dark {
-			fill = color.Black
-		} else {
-			fill = color.White
-		}
-
-		// Create destination canvas with background fill
-		dst := image.NewGray(image.Rect(0, 0, newWidth, newHeight))
-		draw.Draw(dst, dst.Bounds(), &image.Uniform{fill}, image.Point{}, draw.Src)
-
-		// Calculate the scaling factor to maintain aspect ratio
-		scaleX := float64(newWidth) / float64(oldWidth)
-		scaleY := float64(newHeight) / float64(oldHeight)
-		scale := math.Min(scaleX, scaleY)
-
-		// Calculate scaled image dimensions
-		scaledWidth := int(float64(oldWidth) * scale)
-		scaledHeight := int(float64(oldHeight) * scale)
-
-		// Calculate offsets to center the scaled image
-		offsetX := (newWidth - scaledWidth) / 2
-		offsetY := (newHeight - scaledHeight) / 2
-
-		// Scale the source image into the destination
-		scaledRect := image.Rect(offsetX, offsetY, offsetX+scaledWidth, offsetY+scaledHeight)
-		draw.ApproxBiLinear.Scale(dst, scaledRect, src, src.Bounds(), draw.Over, nil)
-		bmp.Encode(&buffer, dst)
-	} else {
-		slog.Info("Returning full resolution image", "title", result.Title, "width", oldWidth, "height", oldHeight)
-		bmp.Encode(&buffer, src)
-	}
-
-	return &buffer
 }
 
 /* Utilities */

@@ -7,22 +7,15 @@ export GOOS=linux
 export GOARCH=arm
 export GOARM=7
 
-output_dir="build"
-target_name="server"
+build_dir="build"
+name="inkarta"
 
-mkdir -p "$output_dir"
+mkdir -p "$build_dir"
 
-echo "Building for Raspberry Pi ($GOARCH, $GOOS)..."
-go build -o $output_dir/$target_name
+echo "Building for $GOOS ($GOARCH)"
+go build -o "$build_dir/$name" 'cmd/inkarta/main.go'
 
-if [ $? -eq 0 ]; then
-  echo "Build succeeded"
-else
-  echo "Build failed"
-  exit 1
-fi
-
-echo "Deploying to Raspberry Pi..."
+echo "Deploying to server"
 
 host="pi@192.168.1.5"
 dest="/home/pi/inkarta"
@@ -31,9 +24,9 @@ dest="/home/pi/inkarta"
 ssh "$host" "sudo systemctl stop inkarta"
 
 # Copy files
-scp "$output_dir/$target_name" "$host:$dest"
+scp "$build_dir/$name" "$host:$dest"
 scp -r templates/ "$host:$dest"
-scp inkarta.service "$host:$dest"
+scp 'init/inkarta.service' "$host:$dest"
 
 # Restart the server
-ssh "$host" "sudo systemctl start inkarta"
+ssh "$host" "sudo systemctl daemon-reload && sudo systemctl start inkarta"
