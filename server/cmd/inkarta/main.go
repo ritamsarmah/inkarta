@@ -1,11 +1,7 @@
 package main
 
 import (
-	_ "embed"
 	"fmt"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"inkarta/internal/db"
 	"inkarta/internal/routes"
 	"log/slog"

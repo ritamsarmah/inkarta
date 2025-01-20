@@ -1,12 +1,8 @@
 package routes
 
 import (
-	_ "embed"
 	"fmt"
 	"html/template"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"inkarta/internal/db"
 	"inkarta/internal/image"
 	"log/slog"
