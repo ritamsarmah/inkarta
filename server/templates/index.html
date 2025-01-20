@@ -58,25 +58,31 @@
                 <div><strong>Current Image:</strong> {{.Current}}</div>
                 <div><strong>Next Image:</strong> {{.Next}}</div>
             </article>
-            <ul>
-                {{range .Images}}
-                <li>
-                    <a
-                        href=""
-                        hx-get="/ui/view/{{.ID}}"
-                        hx-target="body"
-                        hx-swap="beforeend"
-                    >
-                        <!-- prettier-ignore -->
-                        {{if .Artist}}
-                            {{.Title}} - {{.Artist}}
-                        {{else}}
-                            {{.Title}}
-                        {{end}}
-                    </a>
-                </li>
-                {{end}}
-            </ul>
+            <table>
+                <thead>
+                    <tr>
+                        <th scope="col">Title</th>
+                        <th scope="col">Artist</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{range .Images}}
+                    <tr>
+                        <td>
+                            <a
+                                href=""
+                                hx-get="/ui/view/{{.ID}}"
+                                hx-target="body"
+                                hx-swap="beforeend"
+                            >
+                                {{.Title}}
+                            </a>
+                        </td>
+                        <td>{{.Artist}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
         </main>
     </body>
 </html>
