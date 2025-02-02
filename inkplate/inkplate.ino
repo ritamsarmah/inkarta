@@ -10,14 +10,16 @@ Inkplate display(INKPLATE_3BIT);
 
 /* Globals */
 
+#define URL_BUFFER_SIZE 128
+
 constexpr double lowBatteryVoltage = 3.4; // For 3.7V/4.2V battery
-char url[128];                            // URL Buffer
 
 /* Utilities */
 
 // Fetch epoch value from server for specified endpoint
 bool fetchEpoch(const char *endpoint, void (*set)(uint32_t)) {
-    snprintf(url, sizeof(url), "http://%s:%d/device/%s", host, port, endpoint);
+    char url[URL_BUFFER_SIZE];
+    snprintf(url, sizeof(url), "%s/device/%s", SERVER_ADDRESS, endpoint);
 
     HTTPClient http;
     bool success = false;
@@ -77,7 +79,7 @@ void setup() {
     }
 
     // Connect to Wi-Fi (waits until connected)
-    if (!display.connectWiFi(ssid, password)) {
+    if (!display.connectWiFi(SSID, PASSWORD)) {
         displayError("Failed to connect to Wi-Fi");
         return;
     }
@@ -89,8 +91,8 @@ void setup() {
     }
 
     // Download and draw artwork
-    snprintf(url, sizeof(url), "http://%s:%d/image/next?width=%d&height=%d",
-             host, port, display.width(), display.height());
+    char url[URL_BUFFER_SIZE];
+    snprintf(url, sizeof(url), "%s/image/next?width=%d&height=%d", SERVER_ADDRESS, display.width(), display.height());
     if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
         displayError("Error downloading artwork");
         return;

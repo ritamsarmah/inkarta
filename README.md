@@ -39,11 +39,9 @@ See `deploy.sh` for deploying the binary to a Raspberry Pi server.
 2. Create `inkplate/secrets.h` with your Wi-Fi credentials and server info:
 
     ```c
-    const char *ssid = "YOUR_WIFI_SSID";
-    const char *password = "YOUR_WIFI_PASSWORD";
-
-    const char *host = "YOUR_SERVER_IP"
-    const uint16_t port = "YOUR_SERVER_PORT";
+    #define SSID "YOUR_WIFI_SSID"
+    #define PASSWORD "YOUR_WIFI_PASSWORD"
+    #define SERVER_ADDRESS "YOUR_SERVER_ADDRESS"
     ```
 
 #### Installation
