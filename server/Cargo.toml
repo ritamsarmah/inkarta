@@ -1,0 +1,16 @@
+[package]
+name = "inkarta"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.99"
+axum = { version = "0.8.4", features = ["form", "multipart"] }
+chrono = "0.4.41"
+image = "0.25.6"
+maud = { version = "0.27.0", features = ["axum"] }
+serde = { version = "1.0.219", features = ["derive"] }
+sqlx = { version = "0.8.6", features = ["sqlite", "runtime-tokio"] }
+tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.19"
