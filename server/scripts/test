@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+hurl tests/*.hurl --variables-file .env
