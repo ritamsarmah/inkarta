@@ -7,11 +7,11 @@ use maud::{DOCTYPE, Markup, PreEscaped, html};
 use model::Image;
 use serde::Deserialize;
 
-use anyhow::Result;
+use anyhow::{Context, Result, bail};
 use axum::{
     Router,
     body::Body,
-    extract::{Multipart, Path, Query, State},
+    extract::{DefaultBodyLimit, Multipart, Path, Query, State},
     http::{
         Response, StatusCode,
         header::{CONTENT_LENGTH, CONTENT_TYPE},
@@ -21,11 +21,14 @@ use axum::{
 };
 use chrono::{Duration, prelude::*};
 use image::{
-    DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Luma, imageops, load_from_memory,
+    DynamicImage, GenericImageView, ImageBuffer, ImageFormat, ImageReader, Luma, imageops,
+    load_from_memory,
 };
 use sqlx::SqlitePool;
 use tokio::{net::TcpListener, sync::Mutex};
 use tracing::{error, info};
+
+const IMAGE_UPLOAD_MAX_BYTES: usize = 64 * 1024 * 1024; // 64 MB
 
 #[derive(Clone, Debug)]
 struct AppState {
@@ -59,6 +62,7 @@ async fn main() -> Result<()> {
         .route("/image/next/{id}", put(set_next_image))
         .route("/image", post(create_image))
         .route("/image/{id}", delete(delete_image))
+        .layer(DefaultBodyLimit::max(IMAGE_UPLOAD_MAX_BYTES))
         .with_state(state);
 
     let host = std::env::var("HOST").unwrap();
@@ -71,7 +75,7 @@ async fn main() -> Result<()> {
     Ok(axum::serve(listener, app).await?)
 }
 
-/* Pages */
+/* Views */
 
 async fn home_page(State(state): State<AppState>) -> Markup {
     async fn get_image_title(pool: &SqlitePool, id: Option<i64>) -> String {
@@ -123,7 +127,7 @@ async fn home_page(State(state): State<AppState>) -> Markup {
                         li { h1 { "Gallery" } }
                     }
                     ul {
-                        li { button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend" { "Upload Image" } }
+                        li { button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend" { "Upload" } }
                     }
                 }
 
@@ -169,7 +173,10 @@ async fn upload_modal() -> Markup {
                     strong { "Upload Image" }
                 }
 
-                form hx-post="/image" enctype="multipart/form-data" hx-on::before-request="disableForm(event.target)" {
+                form hx-post="/image"
+                    enctype="multipart/form-data"
+                    hx-on::after-request="disableForm(event)"
+                    hx-on::response-error="handleFormError(event)" {
                     label {
                         "Image"
                         input type="file" name="image" accept="image/*" required;
@@ -195,16 +202,31 @@ async fn upload_modal() -> Markup {
                     button type="submit" { "Upload" }
 
                     script {
-                        r#"
-                        function disableForm(form) {
-                            form.querySelectorAll('input, button').forEach(input => {
-                                input.disabled = true;
-                            });
-                            const button = form.querySelector('button');
-                            button.innerText = 'Uploading...';
-                            button.setAttribute('aria-busy', 'true');
-                        }
-                        "#
+                        (
+                            PreEscaped(r#"
+                                function disableForm(event) {
+                                    const form = event.target;
+                                    const button = form.querySelector('button');
+                                    button.innerText = 'Uploading...';
+                                    button.setAttribute('aria-busy', 'true');
+                                    form.querySelectorAll('input, button').forEach(input => {
+                                        input.disabled = true;
+                                    });
+                                }
+
+                                function handleFormError(event) {
+                                    const form = event.target;
+                                    const button = form.querySelector('button');
+                                    if (event.detail && event.detail.xhr && event.detail.xhr.responseText) {
+                                        alert(event.detail.xhr.responseText);
+                                    } else {
+                                        alert('Failed to upload image');
+                                    }
+                                    button.disabled = false;
+                                    button.removeAttribute('aria-busy');
+                                }
+                            "#)
+                        )
                     }
                 }
             }
@@ -320,57 +342,51 @@ async fn get_next_image(
 async fn set_next_image(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
     *state.next_id.lock().await = Some(id);
     info!("Set next image ID: {id}");
-    (StatusCode::OK, [("HX-Refresh", "true")])
+    create_refresh_response(StatusCode::OK)
 }
 
 async fn create_image(
     State(state): State<AppState>,
     mut multipart: Multipart,
 ) -> impl IntoResponse {
-    let mut title = None;
-    let mut artist = None;
+    let mut title = String::new();
+    let mut artist = String::new();
     let mut dark = false;
-    let mut image = None;
+    let mut data = Vec::new();
 
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap();
+    while let Some(field) = multipart.next_field().await.unwrap_or(None) {
+        let name = field.name().unwrap_or_default();
         match name {
-            "title" => title = field.text().await.ok(),
-            "artist" => artist = field.text().await.ok(),
-            "dark" => dark = field.text().await.ok().map_or(false, |value| value == "on"),
+            "title" => title = field.text().await.unwrap_or_default(),
+            "artist" => artist = field.text().await.unwrap_or_default(),
+            "dark" => dark = field.text().await.unwrap_or_default() == "on",
             "image" => {
-                image = field
-                    .bytes()
-                    .await
-                    .map_err(|err| error!("Failed to read uploaded image: {err}"))
-                    .ok()
-                    .and_then(|bytes| process_image(&bytes).ok());
-
-                if image.is_none() {
+                let bytes = field.bytes().await.unwrap_or_default();
+                if bytes.is_empty() {
+                    error!("Image was empty");
                     return StatusCode::BAD_REQUEST.into_response();
                 }
+                data.extend_from_slice(&bytes);
             }
-            _ => {
-                error!("Unexpected form field {name}");
-                return StatusCode::BAD_REQUEST.into_response();
-            }
+            _ => {}
         }
     }
 
-    let status = if let (Some(title), Some(artist), Some(image)) = (title, artist, image) {
-        match repository::create_image(&state.pool, &title, &artist, dark, &image).await {
-            Ok(_) => StatusCode::OK,
-            Err(err) => {
-                error!("Failed to create image: {err}");
-                StatusCode::INTERNAL_SERVER_ERROR
-            }
+    let bitmap = match process_image(&data) {
+        Ok(bitmap) => bitmap,
+        Err(err) => {
+            error!("Failed to process image into bitmap: {:?}", err);
+            return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
-    } else {
-        error!("Missing required fields");
-        StatusCode::BAD_REQUEST
     };
 
-    (status, [("HX-Refresh", "true")]).into_response()
+    if let Err(err) = repository::create_image(&state.pool, &title, &artist, dark, &bitmap).await {
+        error!("Failed to create image: {:?}", err);
+        return StatusCode::INTERNAL_SERVER_ERROR.into_response();
+    }
+
+    info!("Created new image: {} by {}", title, artist);
+    create_refresh_response(StatusCode::OK).into_response()
 }
 
 async fn delete_image(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
@@ -379,15 +395,26 @@ async fn delete_image(Path(id): Path<i64>, State(state): State<AppState>) -> imp
         Err(_) => StatusCode::NOT_FOUND,
     };
 
-    (status, [("HX-Refresh", "true")])
+    create_refresh_response(status)
 }
 
 /* Utilities */
 
 /// Converts an image into a grayscale image.
 pub fn process_image(data: &[u8]) -> Result<DynamicImage> {
-    let grayscale = load_from_memory(data)?.to_luma8();
-    Ok(DynamicImage::ImageLuma8(grayscale))
+    if data.is_empty() {
+        bail!("No image data uploaded")
+    }
+
+    let cursor = std::io::Cursor::new(data);
+    let reader = ImageReader::new(cursor)
+        .with_guessed_format()
+        .context("Cannot determine image format")?;
+
+    Ok(reader
+        .decode()
+        .context("Failed to decode image")?
+        .grayscale())
 }
 
 fn create_image_response(image: Image, size: ImageSize) -> impl IntoResponse {
@@ -419,7 +446,7 @@ fn create_image_response(image: Image, size: ImageSize) -> impl IntoResponse {
         let offset_y = (new_height - scaled_height) / 2;
 
         // Create destination canvas with background fill
-        let color = if image.dark { 0 } else { 1 };
+        let color = if image.dark { 0 } else { 255 };
         let background = ImageBuffer::from_pixel(new_width, new_height, Luma([color]));
         let mut composite = DynamicImage::ImageLuma8(background).into_luma8();
 
@@ -431,19 +458,23 @@ fn create_image_response(image: Image, size: ImageSize) -> impl IntoResponse {
 
         // Scale the source image into the destination
         imageops::overlay(&mut composite, &resized, offset_x as i64, offset_y as i64);
-        composite.write_to(&mut buffer, ImageFormat::Png).unwrap();
+        composite.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
     } else {
         info!(
             "Returning image \"{title}\" at full resolution",
             title = image.title
         );
 
-        full_image.write_to(&mut buffer, ImageFormat::Png).unwrap();
+        full_image.write_to(&mut buffer, ImageFormat::Bmp).unwrap();
     }
 
     Response::builder()
-        .header(CONTENT_TYPE, "image/png")
+        .header(CONTENT_TYPE, "image/bmp")
         .header(CONTENT_LENGTH, buffer.get_ref().len())
         .body(Body::from(buffer.into_inner()))
         .unwrap()
+}
+
+fn create_refresh_response(status: StatusCode) -> impl IntoResponse {
+    (status, [("HX-Refresh", "true")])
 }

@@ -36,7 +36,7 @@ pub async fn create_image(
     image: &DynamicImage,
 ) -> Result<i64> {
     let mut buffer = Cursor::new(Vec::new());
-    image.write_to(&mut buffer, ImageFormat::Png)?;
+    image.write_to(&mut buffer, ImageFormat::Bmp)?;
     let data = buffer.into_inner();
 
     let record = sqlx::query!(
