@@ -17,14 +17,15 @@ use axum::{
         header::{CONTENT_LENGTH, CONTENT_TYPE},
     },
     response::IntoResponse,
-    routing::{get, put},
+    routing::{delete, get, post, put},
 };
 use chrono::{Duration, prelude::*};
-use image::{DynamicImage, ImageBuffer, ImageFormat, Luma, imageops, load_from_memory};
+use image::{
+    DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Luma, imageops, load_from_memory,
+};
 use sqlx::SqlitePool;
 use tokio::net::TcpListener;
-use tracing::info;
-use tracing::{debug, error};
+use tracing::{error, info};
 
 #[derive(Clone)]
 struct AppState {
@@ -49,15 +50,15 @@ async fn main() -> Result<()> {
     };
     let app = Router::new()
         .route("/", get(home_page))
-        // .route("/upload", get(upload_form))
-        // .route("/view/{id}", get(image_modal))
+        // .route("/upload", get(upload_page))
+        // .route("/view/{id}", get(view_page))
         .route("/device/rtc", get(device_rtc))
         .route("/device/alarm", get(device_alarm))
         .route("/image/{id}", get(get_image))
         .route("/image/next", get(get_next_image))
         .route("/image/next/{id}", put(set_next_image))
-        // .route("/image", post(create_image))
-        // .route("/image/:id", delete(delete_image))
+        .route("/image", post(create_image))
+        .route("/image/{id}", delete(delete_image))
         .with_state(state);
 
     let host = std::env::var("HOST").unwrap();
@@ -115,6 +116,8 @@ async fn home_page(State(state): State<AppState>) -> Markup {
                         }
                     "#
                 }
+
+                script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js" {}
             }
             body.container {
                 header {
@@ -191,7 +194,6 @@ async fn get_image(
         Ok(image) => create_image_response(image, query).into_response(),
         Err(_) => StatusCode::NOT_FOUND.into_response(),
     }
-    .into_response()
 }
 
 async fn get_next_image(
@@ -224,7 +226,7 @@ async fn set_next_image(
 ) -> impl IntoResponse {
     state.next_id = Some(id);
     info!("Set next image ID: {id}");
-    (StatusCode::OK, [("HX-Refresh", "true")])
+    StatusCode::OK
 }
 
 async fn create_image(
@@ -275,53 +277,70 @@ async fn create_image(
     }
 }
 
-async fn delete_image(State(state): State<AppState>, id: i64) {
-    todo!()
+async fn delete_image(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
+    match repository::delete_image(&state.pool, id).await {
+        Ok(_) => StatusCode::OK,
+        Err(_) => StatusCode::NOT_FOUND,
+    }
 }
 
 /* Utilities */
 
 /// Converts an image into a grayscale image.
 pub fn process_image(data: &[u8]) -> Result<DynamicImage> {
-    let grayscale = image::load_from_memory(data)?.to_luma8();
+    let grayscale = load_from_memory(data)?.to_luma8();
     Ok(DynamicImage::ImageLuma8(grayscale))
 }
 
-fn create_image_response(image: Image, query: ImageSize) -> impl IntoResponse {
-    let width = query.width;
-    let height = query.height;
+fn create_image_response(image: Image, size: ImageSize) -> impl IntoResponse {
+    let full_image = load_from_memory(&image.data).unwrap();
+    let (full_width, full_height) = full_image.dimensions();
+
+    let new_width = size.width.unwrap_or(full_width);
+    let new_height = size.height.unwrap_or(full_height);
 
     let mut buffer = Cursor::new(Vec::new());
-    let original = load_from_memory(&image.data).unwrap();
 
-    if let (Some(width), Some(height)) = (width, height) {
-        debug!(
-            "Returning image \"{title}\" resized to {width} x {height}",
+    if new_width != full_width || new_height != full_height {
+        info!(
+            "Returning image \"{title}\" resized to {new_width} x {new_height}",
             title = image.title
         );
 
-        // NOTE: Do not use Lanczo3 cause it generates image that cannot be processed by Inkplate
-        let resized = original
-            .resize(width, height, imageops::FilterType::Triangle)
-            .into_luma8();
+        // Calculate the scaling factor to maintain aspect ratio
+        let scale_x = new_width as f32 / full_width as f32;
+        let scale_y = new_height as f32 / full_height as f32;
+        let scale = scale_x.min(scale_y);
 
+        // Calculate scaled image dimensions
+        let scaled_width = (full_width as f32 * scale) as u32;
+        let scaled_height = (full_height as f32 * scale) as u32;
+
+        // Calculate offsets to center the scaled image
+        let offset_x = (new_width - scaled_width) / 2;
+        let offset_y = (new_height - scaled_height) / 2;
+
+        // Create destination canvas with background fill
         let color = if image.dark { 0 } else { 1 };
-        let background = ImageBuffer::from_pixel(width, height, Luma([color]));
+        let background = ImageBuffer::from_pixel(new_width, new_height, Luma([color]));
         let mut composite = DynamicImage::ImageLuma8(background).into_luma8();
 
-        let (new_width, new_height) = resized.dimensions();
-        let x_offset = (width - new_width) / 2;
-        let y_offset = (height - new_height) / 2;
+        // Create resized image
+        // NOTE: Do not use Lanczo3 cause it generates image that cannot be processed by Inkplate
+        let resized = full_image
+            .resize(scaled_width, scaled_height, imageops::FilterType::Triangle)
+            .into_luma8();
 
-        imageops::overlay(&mut composite, &resized, x_offset as i64, y_offset as i64);
+        // Scale the source image into the destination
+        imageops::overlay(&mut composite, &resized, offset_x as i64, offset_y as i64);
         composite.write_to(&mut buffer, ImageFormat::Png).unwrap();
     } else {
-        debug!(
+        info!(
             "Returning image \"{title}\" at full resolution",
             title = image.title
         );
 
-        original.write_to(&mut buffer, ImageFormat::Png).unwrap();
+        full_image.write_to(&mut buffer, ImageFormat::Png).unwrap();
     }
 
     Response::builder()
