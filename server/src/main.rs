@@ -3,7 +3,7 @@ pub mod repository;
 
 use std::io::Cursor;
 
-use maud::{DOCTYPE, Markup, html};
+use maud::{DOCTYPE, Markup, PreEscaped, html};
 use model::Image;
 use serde::Deserialize;
 
@@ -50,8 +50,8 @@ async fn main() -> Result<()> {
     };
     let app = Router::new()
         .route("/", get(home_page))
-        // .route("/upload", get(upload_page))
-        // .route("/view/{id}", get(view_page))
+        .route("/ui/upload", get(upload_modal))
+        // .route("/ui/view/{id}", get(view_modal))
         .route("/device/rtc", get(device_rtc))
         .route("/device/alarm", get(device_alarm))
         .route("/image/{id}", get(get_image))
@@ -104,25 +104,24 @@ async fn home_page(State(state): State<AppState>) -> Markup {
                 link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css";
                 style {
                     r#"
-                        :root {
-                            --pico-font-family: var(--pico-font-family-monospace);
-                        }
-
-                        header {
+                        body {
                             margin-top: 2rem;
-                            display: flex;
-                            align-items: center;
-                            justify-content: space-between;
                         }
                     "#
                 }
 
                 script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js" {}
+                script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js" {}
+                script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js" {}
             }
             body.container {
-                header {
-                    h1 { "Gallery" }
-                    a href="/upload" { "Upload Image" }
+                nav {
+                    ul {
+                        li { h1 { "Gallery" } }
+                    }
+                    ul {
+                        li { button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend" { "Upload Image" } }
+                    }
                 }
 
                 article {
@@ -149,6 +148,60 @@ async fn home_page(State(state): State<AppState>) -> Markup {
                                 }
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+}
+
+async fn upload_modal() -> Markup {
+    html! {
+        dialog open {
+            article {
+                header {
+                    button aria-label="Close" rel="prev" {
+                        script { (PreEscaped(r#"me().on('click', ev => me('dialog').remove());"#)) }
+                    }
+                    strong { "Upload Image" }
+                }
+
+                form hx-post="/image" enctype="multipart/form-data" hx-on::before-request="disableForm(event.target)" {
+                    label {
+                        "Image"
+                        input type="file" name="image" accept="image/*" required;
+                    }
+
+                    label {
+                        "Title"
+                        input type="text" name="title" required;
+                    }
+
+                    label {
+                        "Artist"
+                        input type="text" name="artist";
+                    }
+
+                    label {
+                        input type="checkbox" value="on" name="dark";
+                        "Use dark background"
+                    }
+
+                    br;
+
+                    button type="submit" { "Upload" }
+
+                    script {
+                        r#"
+                        function disableForm(form) {
+                            form.querySelectorAll('input, button').forEach(input => {
+                                input.disabled = true;
+                            });
+                            const button = form.querySelector('button');
+                            button.innerText = 'Uploading...';
+                            button.setAttribute('aria-busy', 'true');
+                        }
+                        "#
                     }
                 }
             }
