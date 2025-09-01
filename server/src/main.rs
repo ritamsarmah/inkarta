@@ -1,7 +1,7 @@
 pub mod model;
 pub mod repository;
 
-use std::io::Cursor;
+use std::{io::Cursor, sync::Arc};
 
 use maud::{DOCTYPE, Markup, PreEscaped, html};
 use model::Image;
@@ -24,14 +24,14 @@ use image::{
     DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Luma, imageops, load_from_memory,
 };
 use sqlx::SqlitePool;
-use tokio::net::TcpListener;
+use tokio::{net::TcpListener, sync::Mutex};
 use tracing::{error, info};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct AppState {
     pub pool: SqlitePool,
-    pub current_id: Option<i64>,
-    pub next_id: Option<i64>,
+    pub current_id: Arc<Mutex<Option<i64>>>,
+    pub next_id: Arc<Mutex<Option<i64>>>,
 }
 
 #[tokio::main]
@@ -45,13 +45,13 @@ async fn main() -> Result<()> {
     // Application
     let state = AppState {
         pool,
-        current_id: None,
-        next_id: None,
+        current_id: Arc::new(Mutex::new(None)),
+        next_id: Arc::new(Mutex::new(None)),
     };
     let app = Router::new()
         .route("/", get(home_page))
         .route("/ui/upload", get(upload_modal))
-        // .route("/ui/view/{id}", get(view_modal))
+        .route("/ui/view/{id}", get(view_modal))
         .route("/device/rtc", get(device_rtc))
         .route("/device/alarm", get(device_alarm))
         .route("/image/{id}", get(get_image))
@@ -85,8 +85,11 @@ async fn home_page(State(state): State<AppState>) -> Markup {
         }
     }
 
-    let current_image_title = get_image_title(&state.pool, state.current_id).await;
-    let next_image_title = get_image_title(&state.pool, state.next_id).await;
+    let current_id = state.current_id.lock().await;
+    let next_id = state.next_id.lock().await;
+
+    let current_image_title = get_image_title(&state.pool, *current_id).await;
+    let next_image_title = get_image_title(&state.pool, *next_id).await;
     let images = repository::list_images(&state.pool)
         .await
         .unwrap_or_default();
@@ -143,7 +146,7 @@ async fn home_page(State(state): State<AppState>) -> Markup {
                         tbody {
                             @for image in images {
                                 tr {
-                                    td { a href={"/view/" (image.id)} { (image.title) } }
+                                    td { a href="" hx-get={"/ui/view/" (image.id)} hx-target="body" hx-swap="beforeend" { (image.title) } }
                                     td { (image.artist) }
                                 }
                             }
@@ -209,6 +212,44 @@ async fn upload_modal() -> Markup {
     }
 }
 
+async fn view_modal(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
+    let Ok(image) = repository::get_image(&state.pool, id).await else {
+        return StatusCode::NOT_FOUND.into_response();
+    };
+
+    let next_id = state.next_id.lock().await;
+
+    html! {
+        dialog open {
+            article {
+                header {
+                    button aria-label="Close" rel="prev" {
+                        script { (PreEscaped(r#"me().on('click', ev => me('dialog').remove());"#)) }
+                    }
+                    h3 { (image.title) }
+                    p { (image.artist) }
+                }
+
+                img
+                    src={"/image/" (image.id) "?width=800&height=600"}
+                    width="800"
+                    height="600";
+
+                footer {
+                    @if *next_id == Some(image.id) {
+                        button class="outline" disabled { "Selected" }
+                    } @else {
+                        button hx-put={"/image/next/" (image.id)} { "Select" }
+                    }
+
+                    button class="secondary" hx-delete={"/image/" (image.id)} { "Delete" }
+                }
+            }
+        }
+    }
+    .into_response()
+}
+
 /* Device */
 
 // Returns Unix epoch timestamp in server's timezone for device RTC.
@@ -251,9 +292,12 @@ async fn get_image(
 
 async fn get_next_image(
     Query(query): Query<ImageSize>,
-    State(mut state): State<AppState>,
+    State(state): State<AppState>,
 ) -> impl IntoResponse {
-    let image = if let Some(next_id) = state.next_id {
+    let mut current_id = state.current_id.lock().await;
+    let mut next_id = state.next_id.lock().await;
+
+    let image = if let Some(next_id) = *next_id {
         repository::get_image(&state.pool, next_id).await
     } else {
         repository::get_random_image(&state.pool).await
@@ -261,8 +305,8 @@ async fn get_next_image(
 
     match image {
         Ok(image) => {
-            state.current_id = Some(image.id);
-            state.next_id = repository::get_random_image(&state.pool)
+            *current_id = Some(image.id);
+            *next_id = repository::get_random_image(&state.pool)
                 .await
                 .ok()
                 .map(|image| image.id);
@@ -273,13 +317,10 @@ async fn get_next_image(
     }
 }
 
-async fn set_next_image(
-    Path(id): Path<i64>,
-    State(mut state): State<AppState>,
-) -> impl IntoResponse {
-    state.next_id = Some(id);
+async fn set_next_image(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
+    *state.next_id.lock().await = Some(id);
     info!("Set next image ID: {id}");
-    StatusCode::OK
+    (StatusCode::OK, [("HX-Refresh", "true")])
 }
 
 async fn create_image(
@@ -306,17 +347,17 @@ async fn create_image(
                     .and_then(|bytes| process_image(&bytes).ok());
 
                 if image.is_none() {
-                    return StatusCode::BAD_REQUEST;
+                    return StatusCode::BAD_REQUEST.into_response();
                 }
             }
             _ => {
                 error!("Unexpected form field {name}");
-                return StatusCode::BAD_REQUEST;
+                return StatusCode::BAD_REQUEST.into_response();
             }
         }
     }
 
-    if let (Some(title), Some(artist), Some(image)) = (title, artist, image) {
+    let status = if let (Some(title), Some(artist), Some(image)) = (title, artist, image) {
         match repository::create_image(&state.pool, &title, &artist, dark, &image).await {
             Ok(_) => StatusCode::OK,
             Err(err) => {
@@ -327,14 +368,18 @@ async fn create_image(
     } else {
         error!("Missing required fields");
         StatusCode::BAD_REQUEST
-    }
+    };
+
+    (status, [("HX-Refresh", "true")]).into_response()
 }
 
 async fn delete_image(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
-    match repository::delete_image(&state.pool, id).await {
+    let status = match repository::delete_image(&state.pool, id).await {
         Ok(_) => StatusCode::OK,
         Err(_) => StatusCode::NOT_FOUND,
-    }
+    };
+
+    (status, [("HX-Refresh", "true")])
 }
 
 /* Utilities */
