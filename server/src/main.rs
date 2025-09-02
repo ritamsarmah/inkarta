@@ -29,7 +29,7 @@ use sqlx::SqlitePool;
 use tokio::{net::TcpListener, sync::Mutex};
 use tracing::{error, info};
 
-const IMAGE_UPLOAD_MAX_BYTES: usize = 64 * 1024 * 1024; // 64 MB
+const IMAGE_UPLOAD_MAX_BYTES: usize = 32 * 1024 * 1024; // 32 MB
 
 #[derive(Clone)]
 struct AppState {
