@@ -103,13 +103,10 @@ async fn main() -> Result<()> {
         .layer(DefaultBodyLimit::max(IMAGE_UPLOAD_MAX_BYTES))
         .with_state(state);
 
-    let host = std::env::var("HOST")?;
-    let port = std::env::var("PORT")?;
-    let addr = format!("{host}:{port}");
+    let addr = format!("{}:{}", std::env::var("HOST")?, std::env::var("PORT")?);
+    let listener = TcpListener::bind(&addr).await?;
 
-    info!("Running on {addr}");
-
-    let listener = TcpListener::bind(addr).await?;
+    info!("Listening on {addr}");
 
     Ok(axum::serve(listener, app).await?)
 }
