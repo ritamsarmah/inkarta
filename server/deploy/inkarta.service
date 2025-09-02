@@ -1,0 +1,14 @@
+[Unit]
+Description=Inkarta
+After=network.target
+
+[Service]
+ExecStart=/home/pi/inkarta/inkarta
+WorkingDirectory=/home/pi/inkarta/
+Restart=always
+User=pi
+Group=pi
+EnvironmentFile=/home/pi/inkarta/.env.production
+
+[Install]
+WantedBy=multi-user.target
