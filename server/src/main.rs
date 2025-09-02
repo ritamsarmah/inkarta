@@ -109,7 +109,10 @@ async fn home_page(State(state): State<AppState>) -> Html<String> {
 
         match repository::get_image_detail(pool, id).await {
             Ok(detail) => detail.title,
-            Err(err) => err.to_string(),
+            Err(err) => {
+                error!("Failed to load image detail: {err}");
+                err.to_string()
+            }
         }
     }
 
@@ -167,7 +170,7 @@ async fn view_modal(Path(id): Path<i64>, State(state): State<AppState>) -> impl 
 // Returns Unix epoch timestamp in server's timezone for device RTC.
 async fn device_rtc() -> String {
     let timestamp = Local::now().timestamp();
-    info!("Returning timestamp for real-time clock: {}", timestamp);
+    info!("Returning timestamp for real-time clock: {timestamp}");
     timestamp.to_string()
 }
 
@@ -196,7 +199,10 @@ async fn get_image(
 ) -> impl IntoResponse {
     match repository::get_image(&state.pool, id).await {
         Ok(image) => create_image_response(image, query).into_response(),
-        Err(_) => StatusCode::NOT_FOUND.into_response(),
+        Err(err) => {
+            error!("Failed to get image {id}: {err}");
+            StatusCode::NOT_FOUND.into_response()
+        }
     }
 }
 
@@ -223,7 +229,10 @@ async fn get_next_image(
 
             create_image_response(image, query).into_response()
         }
-        Err(_) => StatusCode::INTERNAL_SERVER_ERROR.into_response(),
+        Err(err) => {
+            error!("Failed to get next image: {err}");
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
+        }
     }
 }
 
@@ -263,24 +272,27 @@ async fn create_image(
     let bitmap = match process_image(&data) {
         Ok(bitmap) => bitmap,
         Err(err) => {
-            error!("Failed to process image into bitmap: {:?}", err);
+            error!("Failed to process image into bitmap: {err}");
             return StatusCode::INTERNAL_SERVER_ERROR.into_response();
         }
     };
 
     if let Err(err) = repository::create_image(&state.pool, &title, &artist, dark, &bitmap).await {
-        error!("Failed to create image: {:?}", err);
+        error!("Failed to create image: {err}");
         return StatusCode::INTERNAL_SERVER_ERROR.into_response();
     }
 
-    info!("Created new image: {} by {}", title, artist);
+    info!("Created new image: {title} by {artist}");
     create_refresh_response(StatusCode::OK).into_response()
 }
 
 async fn delete_image(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
     let status = match repository::delete_image(&state.pool, id).await {
         Ok(_) => StatusCode::OK,
-        Err(_) => StatusCode::NOT_FOUND,
+        Err(err) => {
+            error!("Failed to delete image: {err}");
+            StatusCode::NOT_FOUND
+        }
     };
 
     create_refresh_response(status)
