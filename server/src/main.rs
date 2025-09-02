@@ -44,7 +44,7 @@ async fn main() -> Result<()> {
     tracing_subscriber::fmt::init();
 
     // Database
-    let database_url = std::env::var("DATABASE_URL").unwrap();
+    let database_url = std::env::var("DATABASE_URL")?;
     let pool = SqlitePool::connect(&database_url).await?;
 
     // Templates
@@ -88,13 +88,14 @@ async fn main() -> Result<()> {
         .layer(DefaultBodyLimit::max(IMAGE_UPLOAD_MAX_BYTES))
         .with_state(state);
 
-    let host = std::env::var("HOST").unwrap();
-    let port = std::env::var("PORT").unwrap();
+    let host = std::env::var("HOST")?;
+    let port = std::env::var("PORT")?;
     let addr = format!("{host}:{port}");
 
     info!("Running on {addr}");
 
-    let listener = TcpListener::bind(addr).await.unwrap();
+    let listener = TcpListener::bind(addr).await?;
+
     Ok(axum::serve(listener, app).await?)
 }
 
