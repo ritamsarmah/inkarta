@@ -22,7 +22,6 @@ The server requires a [Rust](https://www.rust-lang.org/) installation in order t
 
 1. Navigate to the `server/` directory.
 2. If you're cross-compiling for a different target architecture, you may prefer to use [`cross`](https://github.com/cross-rs/cross). Otherwise run `cargo build --release`.
-    - See `scripts/deploy` for deploying the binary to a Raspberry Pi.
 3. Deploy the binary created in `target` to your server.
 
 ### Inkplate

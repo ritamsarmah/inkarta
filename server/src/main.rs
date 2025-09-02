@@ -27,7 +27,8 @@ use image::{
 };
 use sqlx::SqlitePool;
 use tokio::{net::TcpListener, sync::Mutex};
-use tracing::{error, info};
+use tracing::{debug, error, info};
+use tracing_subscriber::EnvFilter;
 
 const IMAGE_UPLOAD_MAX_BYTES: usize = 32 * 1024 * 1024; // 32 MB
 
@@ -41,19 +42,32 @@ struct AppState {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    tracing_subscriber::fmt::init();
+    tracing_subscriber::fmt()
+        .with_env_filter(EnvFilter::from_default_env())
+        .init();
 
     // Database
+
     let database_url = std::env::var("DATABASE_URL")?;
     let pool = SqlitePool::connect(&database_url).await?;
 
     // Templates
+
+    let enable_autoreload = std::env::var("ENABLE_AUTORELOAD").is_ok();
+    debug!(
+        "Template auto-reloading is {}",
+        if enable_autoreload {
+            "enabled"
+        } else {
+            "disabled"
+        }
+    );
+
     let reloader = AutoReloader::new(move |notifier| {
         let mut env = Environment::new();
         let template_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("templates");
 
-        if std::env::var("ENABLE_AUTORELOAD").is_ok() {
-            // Set up autoreload
+        if enable_autoreload {
             env.set_loader(path_loader(&template_path));
             notifier.watch_path(&template_path, true);
             notifier.set_fast_reload(true);
@@ -68,6 +82,7 @@ async fn main() -> Result<()> {
     });
 
     // Application
+
     let state = AppState {
         pool,
         templates: Arc::new(reloader),

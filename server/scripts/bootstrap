@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-sqlx database create --database-url "sqlite://inkarta.db"

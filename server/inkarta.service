@@ -8,7 +8,7 @@ WorkingDirectory=/home/pi/inkarta/
 Restart=always
 User=pi
 Group=pi
-EnvironmentFile=/home/pi/inkarta/.env.production
+EnvironmentFile=/home/pi/inkarta/.env
 
 [Install]
 WantedBy=multi-user.target
