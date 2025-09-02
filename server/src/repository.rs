@@ -5,13 +5,24 @@ use anyhow::Result;
 use image::{DynamicImage, ImageFormat};
 use sqlx::SqlitePool;
 
-use crate::model::Image;
+use crate::model::{Image, ImageDetail};
 
 pub async fn get_image(pool: &SqlitePool, id: i64) -> Result<Image> {
     sqlx::query_as!(Image, r#"select * from images where id = ?"#, id)
         .fetch_one(pool)
         .await
         .context("Failed to get image")
+}
+
+pub async fn get_image_detail(pool: &SqlitePool, id: i64) -> Result<ImageDetail> {
+    sqlx::query_as!(
+        ImageDetail,
+        r#"select id, title, artist from images where id = ?"#,
+        id
+    )
+    .fetch_one(pool)
+    .await
+    .context("Failed to get image detail")
 }
 
 pub async fn get_random_image(pool: &SqlitePool) -> Result<Image> {
@@ -26,6 +37,13 @@ pub async fn list_images(pool: &SqlitePool) -> Result<Vec<Image>> {
         .fetch_all(pool)
         .await
         .context("Failed to list images")
+}
+
+pub async fn list_image_details(pool: &SqlitePool) -> Result<Vec<ImageDetail>> {
+    sqlx::query_as!(ImageDetail, r#"select id, title, artist from images"#)
+        .fetch_all(pool)
+        .await
+        .context("Failed to list image details")
 }
 
 pub async fn create_image(

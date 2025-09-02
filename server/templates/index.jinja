@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="color-scheme" content="light dark">
+        <title>Gallery | Inkarta</title>
+        <link rel="stylesheet"
+              href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+        <script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js"></script>
+        <style>
+          body {
+            margin-top: 2rem;
+          }
+        </style>
+    </head>
+    <body class="container">
+        <nav>
+            <ul>
+                <li>
+                    <h1>Gallery</h1>
+                </li>
+            </ul>
+            <ul>
+                <li>
+                    <button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend">Upload</button>
+                </li>
+            </ul>
+        </nav>
+        <article>
+            <strong>Current Image:</strong>
+            {{ current_title }}
+            <br>
+            <strong>Next Image:</strong>
+            {{ next_title }}
+        </article>
+        <main>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Artist</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for image in images %}
+                        <tr>
+                            <td>
+                                <a href=""
+                                   hx-get="/ui/view/{{ image.id }}"
+                                   hx-target="body"
+                                   hx-swap="beforeend">{{ image.title }}</a>
+                            </td>
+                            <td>{{ image.artist }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </main>
+        <script>
+            function closeDialog() {
+                document.querySelector("dialog").remove();
+            }
+        </script>
+    </body>
+</html>

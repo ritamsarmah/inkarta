@@ -1,9 +1,10 @@
 pub mod model;
 pub mod repository;
 
-use std::{io::Cursor, sync::Arc};
+use std::{io::Cursor, path::PathBuf, sync::Arc};
 
-use maud::{DOCTYPE, Markup, PreEscaped, html};
+use minijinja::{Environment, context, path_loader};
+use minijinja_autoreload::AutoReloader;
 use model::Image;
 use serde::Deserialize;
 
@@ -16,7 +17,7 @@ use axum::{
         Response, StatusCode,
         header::{CONTENT_LENGTH, CONTENT_TYPE},
     },
-    response::IntoResponse,
+    response::{Html, IntoResponse},
     routing::{delete, get, post, put},
 };
 use chrono::{Duration, prelude::*};
@@ -30,9 +31,10 @@ use tracing::{error, info};
 
 const IMAGE_UPLOAD_MAX_BYTES: usize = 64 * 1024 * 1024; // 64 MB
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 struct AppState {
     pub pool: SqlitePool,
+    pub templates: Arc<AutoReloader>,
     pub current_id: Arc<Mutex<Option<i64>>>,
     pub next_id: Arc<Mutex<Option<i64>>>,
 }
@@ -45,9 +47,30 @@ async fn main() -> Result<()> {
     let database_url = std::env::var("DATABASE_URL").unwrap();
     let pool = SqlitePool::connect(&database_url).await?;
 
+    // Templates
+    let reloader = AutoReloader::new(move |notifier| {
+        let mut env = Environment::new();
+        let template_path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("templates");
+
+        if std::env::var("ENABLE_AUTORELOAD").is_ok() {
+            // Set up autoreload
+            env.set_loader(path_loader(&template_path));
+            notifier.watch_path(&template_path, true);
+            notifier.set_fast_reload(true);
+        } else {
+            // Inline templates to avoid copying templates when deploying
+            env.add_template("index.jinja", include_str!("../templates/index.jinja"))?;
+            env.add_template("upload.jinja", include_str!("../templates/upload.jinja"))?;
+            env.add_template("view.jinja", include_str!("../templates/view.jinja"))?;
+        }
+
+        Ok(env)
+    });
+
     // Application
     let state = AppState {
         pool,
+        templates: Arc::new(reloader),
         current_id: Arc::new(Mutex::new(None)),
         next_id: Arc::new(Mutex::new(None)),
     };
@@ -77,199 +100,65 @@ async fn main() -> Result<()> {
 
 /* Views */
 
-async fn home_page(State(state): State<AppState>) -> Markup {
+async fn home_page(State(state): State<AppState>) -> Html<String> {
     async fn get_image_title(pool: &SqlitePool, id: Option<i64>) -> String {
         let Some(id) = id else {
             return "None".into();
         };
 
-        match repository::get_image(pool, id).await {
-            Ok(image) => image.title,
-            Err(_) => "Error".into(),
+        match repository::get_image_detail(pool, id).await {
+            Ok(detail) => detail.title,
+            Err(err) => err.to_string(),
         }
     }
 
-    let current_id = state.current_id.lock().await;
-    let next_id = state.next_id.lock().await;
+    let current_id = *state.current_id.lock().await;
+    let next_id = *state.next_id.lock().await;
 
-    let current_image_title = get_image_title(&state.pool, *current_id).await;
-    let next_image_title = get_image_title(&state.pool, *next_id).await;
-    let images = repository::list_images(&state.pool)
+    let current_title = get_image_title(&state.pool, current_id).await;
+    let next_title = get_image_title(&state.pool, next_id).await;
+    let details = repository::list_image_details(&state.pool)
         .await
         .unwrap_or_default();
 
-    html! {
-        (DOCTYPE)
-        html {
-            head {
-                meta charset="UTF-8";
-                meta name="viewport" content="width=device-width, initial-scale=1.0";
-                meta name="color-scheme" content="light dark";
+    let context = context! {
+        current_title => current_title,
+        next_title => next_title,
+        images => details,
+    };
 
-                title { "Gallery | Inkarta" }
+    let templates = state.templates.acquire_env().unwrap();
+    let template = templates.get_template("index.jinja").unwrap();
+    let rendered = template.render(context).unwrap();
 
-                link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css";
-                style {
-                    r#"
-                        body {
-                            margin-top: 2rem;
-                        }
-                    "#
-                }
-
-                script src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.6/dist/htmx.min.js" {}
-                script src="https://cdn.jsdelivr.net/gh/gnat/surreal@main/surreal.js" {}
-                script src="https://cdn.jsdelivr.net/gh/gnat/css-scope-inline@main/script.js" {}
-            }
-            body.container {
-                nav {
-                    ul {
-                        li { h1 { "Gallery" } }
-                    }
-                    ul {
-                        li { button hx-get="/ui/upload" hx-target="body" hx-swap="beforeend" { "Upload" } }
-                    }
-                }
-
-                article {
-                    strong { "Current Image: " }
-                    (current_image_title)
-                    br;
-                    strong { "Next Image: " }
-                    (next_image_title)
-                }
-
-                main {
-                    table {
-                        thead {
-                            tr {
-                                th { "Title" }
-                                th { "Artist" }
-                            }
-                        }
-                        tbody {
-                            @for image in images {
-                                tr {
-                                    td { a href="" hx-get={"/ui/view/" (image.id)} hx-target="body" hx-swap="beforeend" { (image.title) } }
-                                    td { (image.artist) }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
+    Html(rendered)
 }
 
-async fn upload_modal() -> Markup {
-    html! {
-        dialog open {
-            article {
-                header {
-                    button aria-label="Close" rel="prev" {
-                        script { (PreEscaped(r#"me().on('click', ev => me('dialog').remove());"#)) }
-                    }
-                    strong { "Upload Image" }
-                }
+async fn upload_modal(State(state): State<AppState>) -> Html<String> {
+    let templates = state.templates.acquire_env().unwrap();
+    let template = templates.get_template("upload.jinja").unwrap();
+    let rendered = template.render({}).unwrap();
 
-                form hx-post="/image"
-                    enctype="multipart/form-data"
-                    hx-on::after-request="disableForm(event)"
-                    hx-on::response-error="handleFormError(event)" {
-                    label {
-                        "Image"
-                        input type="file" name="image" accept="image/*" required;
-                    }
-
-                    label {
-                        "Title"
-                        input type="text" name="title" required;
-                    }
-
-                    label {
-                        "Artist"
-                        input type="text" name="artist";
-                    }
-
-                    label {
-                        input type="checkbox" value="on" name="dark";
-                        "Use dark background"
-                    }
-
-                    br;
-
-                    button type="submit" { "Upload" }
-
-                    script {
-                        (
-                            PreEscaped(r#"
-                                function disableForm(event) {
-                                    const form = event.target;
-                                    const button = form.querySelector('button');
-                                    button.innerText = 'Uploading...';
-                                    button.setAttribute('aria-busy', 'true');
-                                    form.querySelectorAll('input, button').forEach(input => {
-                                        input.disabled = true;
-                                    });
-                                }
-
-                                function handleFormError(event) {
-                                    const form = event.target;
-                                    const button = form.querySelector('button');
-                                    if (event.detail && event.detail.xhr && event.detail.xhr.responseText) {
-                                        alert(event.detail.xhr.responseText);
-                                    } else {
-                                        alert('Failed to upload image');
-                                    }
-                                    button.disabled = false;
-                                    button.removeAttribute('aria-busy');
-                                }
-                            "#)
-                        )
-                    }
-                }
-            }
-        }
-    }
+    Html(rendered)
 }
 
 async fn view_modal(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
-    let Ok(image) = repository::get_image(&state.pool, id).await else {
+    let Ok(detail) = repository::get_image_detail(&state.pool, id).await else {
         return StatusCode::NOT_FOUND.into_response();
     };
 
-    let next_id = state.next_id.lock().await;
+    let next_id = *state.next_id.lock().await;
 
-    html! {
-        dialog open {
-            article {
-                header {
-                    button aria-label="Close" rel="prev" {
-                        script { (PreEscaped(r#"me().on('click', ev => me('dialog').remove());"#)) }
-                    }
-                    h3 { (image.title) }
-                    p { (image.artist) }
-                }
+    let context = context! {
+        image => detail,
+        next_id => next_id,
+    };
 
-                img
-                    src={"/image/" (image.id) "?width=800&height=600"}
-                    width="800"
-                    height="600";
+    let templates = state.templates.acquire_env().unwrap();
+    let template = templates.get_template("view.jinja").unwrap();
+    let rendered = template.render(context).unwrap();
 
-                footer {
-                    @if *next_id == Some(image.id) {
-                        button class="outline" disabled { "Selected" }
-                    } @else {
-                        button hx-put={"/image/next/" (image.id)} { "Select" }
-                    }
-
-                    button class="secondary" hx-delete={"/image/" (image.id)} { "Delete" }
-                }
-            }
-        }
-    }
-    .into_response()
+    Html(rendered).into_response()
 }
 
 /* Device */
@@ -290,8 +179,6 @@ async fn device_alarm() -> String {
     let next_midnight = midnight + Duration::days(1);
     next_midnight.timestamp().to_string()
 }
-
-/* Layout */
 
 /* Image */
 
