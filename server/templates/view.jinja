@@ -1,0 +1,21 @@
+<dialog open>
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog()"></button>
+            <h3>{{ image.title }}</h3>
+            <p>{{ image.artist }}</p>
+        </header>
+        <img src="/image/{{ image.id }}?width=800&height=600"
+             width="800"
+             height="600"
+             alt="{{ image.title }}">
+        <footer>
+            {% if next_id == image.id %}
+                <button class="outline" disabled>Selected</button>
+            {% else %}
+                <button hx-put="/image/next/{{ image.id }}">Select</button>
+            {% endif %}
+            <button class="secondary" hx-delete="/image/{{ image.id }}">Delete</button>
+        </footer>
+    </article>
+</dialog>

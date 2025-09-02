@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+set -a
+source .env.development
+set +a
+
+bacon run-long

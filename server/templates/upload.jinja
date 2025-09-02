@@ -1,0 +1,55 @@
+<dialog open>
+    <article>
+        <header>
+            <button aria-label="Close" rel="prev" onclick="closeDialog()"></button>
+            <strong>Upload Image</strong>
+        </header>
+        <form hx-post="/image"
+              enctype="multipart/form-data"
+              hx-on::before-request="disableForm(event)"
+              hx-on::response-error="handleFormError(event)">
+            <label>
+                Image
+                <input type="file" name="image" accept="image/*" required>
+            </label>
+            <label>
+                Title
+                <input type="text" name="title" required>
+            </label>
+            <label>
+                Artist
+                <input type="text" name="artist">
+            </label>
+            <label>
+                <input type="checkbox" value="on" name="dark">
+                Use dark background
+            </label>
+            <br>
+            <button type="submit">Upload</button>
+            <script>
+                function disableForm(event) {
+                    const form = event.target;
+                    const button = form.querySelector('button');
+                    button.innerText = 'Uploading...';
+                    button.setAttribute('aria-busy', 'true');
+                    form.querySelectorAll('input, button').forEach(input => {
+                        input.disabled = true;
+                    });
+                }
+
+                function handleFormError(event) {
+                    const form = event.target;
+                    const button = form.querySelector('button');
+                    if (event.detail && event.detail.xhr && event.detail.xhr.responseText) {
+                        alert(event.detail.xhr.responseText);
+                    } else {
+                        alert('Failed to upload image');
+                    }
+
+                    button.disabled = false;
+                    button.removeAttribute('aria-busy');
+                }
+            </script>
+        </form>
+    </article>
+</dialog>

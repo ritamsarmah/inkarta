@@ -10,21 +10,20 @@ This repository contains two components:
     - Displays pictures hosted on server.
     - Automatically updates the picture at midnight.
     - Enters low power mode until the next scheduled refresh or a manual refresh (via wake button), extending battery life to several months.
-2. `server` - Server written with Go + HTMX:
+2. `server` - Server written with Rust + HTMX:
     - Web dashboard for uploading and managing images.
     - Handles image processing and storage to a SQLite database.
-    - Produces single binary for easy deployment.
 
 ## Getting Started
 
 ### Server
 
-The server requires a [Go](https://go.dev) installation in order to run.
+The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
 
 1. Navigate to the `server/` directory.
-2. Run `go run .`
-
-See `deploy.sh` for deploying the binary to a Raspberry Pi server.
+2. If you're cross-compiling for a different target architecture, you may prefer to use [`cross`](https://github.com/cross-rs/cross). Otherwise run `cargo build --release`.
+    - See `scripts/deploy` for deploying the binary to a Raspberry Pi.
+3. Deploy the binary created in `target` to your server.
 
 ### Inkplate
 
