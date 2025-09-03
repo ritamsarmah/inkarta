@@ -13,6 +13,7 @@ Inkplate display(INKPLATE_3BIT);
 #define URL_BUFFER_SIZE 128
 
 constexpr double lowBatteryVoltage = 3.4; // For 3.7V/4.2V battery
+constexpr double sleepDelayMillis = 5000;
 
 /* Utilities */
 
@@ -53,6 +54,10 @@ void displayError(const char *message) {
     display.println(message);
     display.display();
     display.disconnect();
+
+    // Delay sleep to allow display to finish refresh
+    delay(sleepDelayMillis);
+
     esp_deep_sleep_start();
 }
 
@@ -109,9 +114,6 @@ void setup() {
 
     // Disconnect Wi-Fi
     display.disconnect();
-
-    // Enable wake via wake button
-    esp_sleep_enable_ext0_wakeup(GPIO_NUM_36, LOW);
 
     // Enable wake via RTC interrupt alarm
     esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39,

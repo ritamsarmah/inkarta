@@ -51,7 +51,14 @@ The server requires a [Rust](https://www.rust-lang.org/) installation in order t
     arduino-cli board list # Identify device's port
     ```
 
-3. Compile and upload the `inkplate/inkplate.ino` sketch to the Inkplate.
+3. Install the Inkplate library.
+
+    ```sh
+    arduino-cli core update-index
+    arduino-cli lib install InkplateLibrary
+    ```
+
+4. Compile and upload the `inkplate/inkplate.ino` sketch to the Inkplate.
 
     ```sh
     arduino-cli compile --verbose --upload --profile default
