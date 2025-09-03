@@ -8,7 +8,7 @@ DEPLOY_HOST := pi@192.168.1.5
 DEPLOY_PATH := /home/pi/inkarta/
 DEPLOY_TARGET := aarch64-unknown-linux-gnu
 
-.PHONY: build clean database deploy develop format
+.PHONY: *
 
 build:
 	cross build --release --target '$(DEPLOY_TARGET)'

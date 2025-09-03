@@ -326,7 +326,7 @@ pub fn process_image(data: &[u8]) -> Result<DynamicImage> {
         bail!("No image data uploaded")
     }
 
-    let cursor = std::io::Cursor::new(data);
+    let cursor = Cursor::new(data);
     let reader = ImageReader::new(cursor)
         .with_guessed_format()
         .context("Cannot determine image format")?;
