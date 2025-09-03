@@ -300,7 +300,15 @@ async fn create_image(
 
 async fn delete_image(Path(id): Path<i64>, State(state): State<AppState>) -> impl IntoResponse {
     let status = match repository::delete_image(&state.pool, id).await {
-        Ok(_) => StatusCode::OK,
+        Ok(_) => {
+            for mutex in [state.current_id, state.next_id] {
+                if *mutex.lock().await == Some(id) {
+                    *mutex.lock().await = None;
+                }
+            }
+
+            StatusCode::OK
+        }
         Err(err) => {
             error!("Failed to delete image: {err}");
             StatusCode::NOT_FOUND
