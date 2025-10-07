@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+if [ ! -f "${DATABASE_FILE}" ]; then \
+	echo "Creating ${DATABASE_FILE}..."; \
+	sqlx database create --database-url "${DATABASE_URL}"; \
+	sqlite3 "${DATABASE_FILE}" < schema.sql; \
+fi

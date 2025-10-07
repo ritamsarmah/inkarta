@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+
+ssh "${DEPLOY_HOST}" "sudo systemctl stop ${PROJECT} || true"
+ssh "${DEPLOY_HOST}" "mkdir -p ${DEPLOY_PATH}"
+rsync "target/${DEPLOY_TARGET}/release/${PROJECT}" "${DEPLOY_HOST}:${DEPLOY_PATH}"
+rsync "${PROJECT}.service" "${DEPLOY_HOST}:${DEPLOY_PATH}"
+ssh "${DEPLOY_HOST}" "sudo systemctl daemon-reload && sudo systemctl start ${PROJECT}"

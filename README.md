@@ -14,19 +14,9 @@ This repository contains two components:
     - Web dashboard for uploading and managing images.
     - Handles image processing and storage to a SQLite database.
 
-## Getting Started
+## Inkplate
 
-### Server
-
-The server requires a [Rust](https://www.rust-lang.org/) installation in order to build.
-
-1. Navigate to the `server/` directory.
-2. If you're cross-compiling for a different target architecture, you may prefer to use [`cross`](https://github.com/cross-rs/cross). Otherwise run `cargo build --release`.
-3. Deploy the binary created in `target` to your server.
-
-### Inkplate
-
-#### Prerequisites
+### Prerequisites
 
 1. Install the `arduino-cli`
 
@@ -42,7 +32,7 @@ The server requires a [Rust](https://www.rust-lang.org/) installation in order t
     #define SERVER_ADDRESS "YOUR_SERVER_ADDRESS"
     ```
 
-#### Installation
+### Installation
 
 1. Connect the Inkplate to your computer via USB.
 2. Update `sketch.yaml` with your appropriate Inkplate `fqbn` and `port`:
@@ -66,6 +56,23 @@ The server requires a [Rust](https://www.rust-lang.org/) installation in order t
 
 > [!NOTE]
 > If you encounter a "Bad CPU type in executable" error on Apple Silicon, install Rosetta using `softwareupdate --install-rosetta`
+
+## Server 
+
+### Prerequisites
+
+The server requires a [Rust](https://www.rust-lang.org/) installation to build and run. Installing `mise` is recommended for managing scripts and environment variables.
+
+### Development
+
+```sh
+mise watch serve --restart
+```
+
+### Deployment
+
+1. `mise run build`: Cross-compile to the target architecture defined by environment `DEPLOY_TARGET`.
+2. `mise run deploy`: Deploy the binary to your server.
 
 ## Reference
 
