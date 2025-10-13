@@ -59,20 +59,11 @@ This repository contains two components:
 
 ## Server 
 
-### Prerequisites
-
 The server requires a [Rust](https://www.rust-lang.org/) installation to build and run. Installing `mise` is recommended for managing scripts and environment variables.
 
-### Development
-
-```sh
-mise watch serve --restart
-```
-
-### Deployment
-
-1. `mise run build`: Cross-compile to the target architecture defined by environment `DEPLOY_TARGET`.
-2. `mise run deploy`: Deploy the binary to your server.
+- `mise run develop`: Run hot-reloading development server.
+- `mise run build`: Cross-compile to the target architecture defined by environment `DEPLOY_TARGET`.
+- `mise run deploy`: Deploy the binary to your server.
 
 ## Reference
 

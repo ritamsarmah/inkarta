@@ -7,6 +7,7 @@ use minijinja::{Environment, context, path_loader};
 use minijinja_autoreload::AutoReloader;
 use model::Image;
 use serde::Deserialize;
+use tokio::signal;
 
 use anyhow::{Context, Result, bail};
 use axum::{
@@ -108,7 +109,33 @@ async fn main() -> Result<()> {
 
     info!("Listening on {addr}");
 
-    Ok(axum::serve(listener, app).await?)
+    Ok(axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await?)
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("Failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("Failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
 }
 
 /* Views */
