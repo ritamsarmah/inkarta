@@ -1,4 +1,3 @@
-target/
+inkarta
+tmp/
 *.db
-*.db-shm
-*.db-wal

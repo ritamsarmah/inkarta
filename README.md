@@ -10,7 +10,7 @@ This repository contains two components:
     - Displays pictures hosted on server.
     - Automatically updates the picture at midnight.
     - Enters low power mode until the next scheduled refresh or a manual refresh (via wake button), extending battery life to several months.
-2. `server` - Server written with Rust + HTMX:
+2. `server` - Server written with Go:
     - Web dashboard for uploading and managing images.
     - Handles image processing and storage to a SQLite database.
 
@@ -59,11 +59,12 @@ This repository contains two components:
 
 ## Server 
 
-The server requires a [Rust](https://www.rust-lang.org/) installation to build and run. Installing `mise` is recommended for managing scripts and environment variables.
+The server requires a [Go](https://go.dev) installation in order to run.
 
-- `mise run develop`: Run hot-reloading development server.
-- `mise run build`: Cross-compile to the target architecture defined by environment `DEPLOY_TARGET`.
-- `mise run deploy`: Deploy the binary to your server.
+1. Navigate to the `server/` directory.
+2. Run `go run .`
+
+See `deploy.sh` for deploying the binary to a server.
 
 ## Reference
 

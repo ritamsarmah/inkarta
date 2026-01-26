@@ -24,10 +24,10 @@
         </nav>
         <article>
             <strong>Current Image:</strong>
-            {{ current_title }}
+            {{ .CurrentTitle }}
             <br>
             <strong>Next Image:</strong>
-            {{ next_title }}
+            {{ .NextTitle }}
         </article>
         <main>
             <table>
@@ -38,17 +38,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for image in images %}
+                    {{ range .Images }}
                         <tr>
                             <td>
                                 <a href=""
-                                   hx-get="/ui/view/{{ image.id }}"
+                                   hx-get="/ui/view/{{ .ID }}"
                                    hx-target="body"
-                                   hx-swap="beforeend">{{ image.title }}</a>
+                                   hx-swap="beforeend">{{ .Title }}</a>
                             </td>
-                            <td>{{ image.artist }}</td>
+                            <td>{{ .Artist }}</td>
                         </tr>
-                    {% endfor %}
+                    {{ end }}
                 </tbody>
             </table>
         </main>

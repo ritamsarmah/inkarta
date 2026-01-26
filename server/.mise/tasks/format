@@ -1,4 +1,0 @@
-#!/usr/bin/env bash
-
-cargo fmt
-djlint --reformat --format-css --format-js --extension jinja templates/

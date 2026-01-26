@@ -1,3 +1,0 @@
-#!/usr/bin/env bash
-
-cross build --release --target "${DEPLOY_TARGET}"
