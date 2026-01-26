@@ -99,7 +99,7 @@ func main() {
 func homePage(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	images, err := Queries.ListImages(ctx)
+	images, err := Queries.ListImageInfo(ctx)
 	if err != nil {
 		log.Println("failed to fetch list of images:", err)
 		w.WriteHeader(http.StatusInternalServerError)
