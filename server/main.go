@@ -51,6 +51,7 @@ func main() {
 	var err error
 
 	// Database
+
 	dsn := env("SQLITE_DSN")
 	DB, err = sql.Open("sqlite", dsn)
 	if err != nil {
