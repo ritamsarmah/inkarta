@@ -1,4 +1,4 @@
-module ritam.me/inkarta/v2
+module ritam.me/inkarta
 
 go 1.25.6
 

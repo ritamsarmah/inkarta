@@ -22,9 +22,9 @@ import (
 
 	"golang.org/x/image/bmp"
 	"golang.org/x/image/draw"
+	"ritam.me/inkarta/internal/db"
 
 	_ "modernc.org/sqlite"
-	"ritam.me/inkarta/v2/internal/db"
 )
 
 /* Globals */
