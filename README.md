@@ -44,7 +44,7 @@ This repository contains two components:
 3. Install the Inkplate library.
 
     ```sh
-    arduino-cli core update-index
+    arduino-cli update && arduino-cli upgrade
     arduino-cli lib install InkplateLibrary
     ```
 

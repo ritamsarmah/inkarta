@@ -6,7 +6,7 @@
 #include "Inkplate.h"
 #include "secrets.h"
 
-Inkplate display(INKPLATE_3BIT);
+Inkplate inkplate(INKPLATE_3BIT);
 
 /* Globals */
 
@@ -39,21 +39,21 @@ bool fetchEpoch(const char *endpoint, void (*set)(uint32_t)) {
 // Initializes real-time clock using server
 bool setRtc() {
     return fetchEpoch("rtc",
-                      [](uint32_t epoch) { display.rtcSetEpoch(epoch); });
+                      [](uint32_t epoch) { inkplate.rtc.setEpoch(epoch); });
 }
 
 // Set alarm for next display refresh using server
 bool setAlarm() {
     return fetchEpoch("alarm", [](uint32_t epoch) {
-        display.rtcSetAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
+        inkplate.rtc.setAlarmEpoch(epoch, RTC_ALARM_MATCH_DHHMMSS);
     });
 }
 
 // Print error message and sleep display
 void displayError(const char *message) {
-    display.println(message);
-    display.display();
-    display.disconnect();
+    inkplate.println(message);
+    inkplate.display();
+    inkplate.disconnect();
 
     // Delay sleep to allow display to finish refresh
     delay(sleepDelayMillis);
@@ -64,47 +64,48 @@ void displayError(const char *message) {
 /* Main */
 
 void setup() {
-    display.begin();
+    inkplate.begin();
 
-    display.setRotation(3);
-    display.setTextSize(2);
-    display.setTextColor(BLACK);
+    inkplate.setRotation(3);
+    inkplate.setTextSize(2);
+    inkplate.setTextColor(BLACK);
 
     // Reset real-time clock
-    // display.rtcReset();
+    // inkplate.rtc.reset();
 
     // Clear alarm flag from any previous alarm
-    display.rtcClearAlarmFlag();
+    inkplate.rtc.clearAlarmFlag();
 
     // Check for low battery
-    double voltage = display.readBattery();
+    double voltage = inkplate.readBattery();
     if (voltage < lowBatteryVoltage) {
         displayError("Low Battery - Recharge Now");
         return;
     }
 
     // Connect to Wi-Fi (waits until connected)
-    if (!display.connectWiFi(SSID, PASSWORD)) {
+    if (!inkplate.connectWiFi(SSID, PASSWORD)) {
         displayError("Failed to connect to Wi-Fi");
         return;
     }
 
     // Set real-time clock if needed
-    if (!display.rtcIsSet() && !setRtc()) {
+    if (!inkplate.rtc.isSet() && !setRtc()) {
         displayError("Failed to set real time clock");
         return;
     }
 
     // Download and draw artwork
     char url[URL_BUFFER_SIZE];
-    snprintf(url, sizeof(url), "%s/image/next?width=%d&height=%d", SERVER_ADDRESS, display.width(), display.height());
-    if (!display.drawImage(url, display.BMP, 0, 0, false, false)) {
+    snprintf(url, sizeof(url), "%s/image/next?width=%d&height=%d",
+             SERVER_ADDRESS, inkplate.width(), inkplate.height());
+    if (!inkplate.image.draw(url, inkplate.image.BMP, 0, 0, false, false)) {
         displayError("Error downloading artwork");
         return;
     }
 
     // Refresh display to show artwork
-    display.display();
+    inkplate.display();
 
     // Set next display refresh alarm
     if (!setAlarm()) {
@@ -113,11 +114,10 @@ void setup() {
     }
 
     // Disconnect Wi-Fi
-    display.disconnect();
+    inkplate.disconnect();
 
     // Enable wake via RTC interrupt alarm
-    esp_sleep_enable_ext1_wakeup(int64_t(1) << GPIO_NUM_39,
-                                 ESP_EXT1_WAKEUP_ALL_LOW);
+    esp_sleep_enable_ext0_wakeup(GPIO_NUM_39, 0);
 
     // Enter ESP32 low power mode
     esp_deep_sleep_start();
