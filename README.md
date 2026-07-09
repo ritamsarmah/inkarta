@@ -59,12 +59,10 @@ This repository contains two components:
 
 ## Server 
 
-The server requires a [Go](https://go.dev) installation in order to run.
+The server requires a [Go](https://go.dev) installation in order to build.
 
 1. Navigate to the `server/` directory.
-2. Run `go run .`
-
-See `deploy.sh` for deploying the binary to a server.
+2. Run `go build .` (with appropriate `GOOS`/`GOARCH`/`GOARM` if cross-compiling)
 
 ## Reference
 

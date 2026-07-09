@@ -7,4 +7,4 @@ profiles:
       - platform: Inkplate_Boards:esp32 (8.1.0)
         platform_index_url: https://github.com/SolderedElectronics/Dasduino-Board-Definitions-for-Arduino-IDE/raw/master/package_Dasduino_Boards_index.json
     libraries:
-      - InkplateLibrary (11.0.1)
+      - InkplateLibrary (11.1.2)
